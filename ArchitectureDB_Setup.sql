@@ -1,4 +1,5 @@
--- Drop the database if it exists (Refresh/Clean start)
+
+-- Drop the database if it exists (for a clean start)
 DROP DATABASE IF EXISTS ArchitectureDB;
 
 -- Create a fresh database
@@ -8,26 +9,50 @@ USE ArchitectureDB;
 -- Address table
 CREATE TABLE IF NOT EXISTS Address (
     address_id INT AUTO_INCREMENT PRIMARY KEY,
-    street_number VARCHAR(10),
-    street_name VARCHAR(100),
+    street_address VARCHAR(100),
     city VARCHAR(50),
     state VARCHAR(50),
+    street_number VARCHAR(10),
     postal_code VARCHAR(20),
     country VARCHAR(50)
 );
 
--- New project table
+-- Project table
 CREATE TABLE IF NOT EXISTS Project (
-	project_number INT AUTO_INCREMENT PRIMARY KEY,
+    project_number INT AUTO_INCREMENT PRIMARY KEY,
     address_id INT,
     client VARCHAR(100),
+    client_phone VARCHAR(20),
+    client_email VARCHAR(100),
     size ENUM('S', 'M', 'L'),
     start_date DATE,
     last_interaction_date DATE,
     employee_creator VARCHAR(100),
-    FOREIGN KEY (address_id) REFERENCES Address(address_id)
+    FOREIGN KEY (address_id) REFERENCES Address(address_id),
+    M1 INT default 0,
+    M2 INT default 0,
+    M3 INT default 0
 );
 
+-- Sample address data
+INSERT INTO Address (street_address, city, state, street_number, postal_code, country)
+VALUES 
+('Main St', 'Springfield', 'IL', '123', '62701', 'USA'),
+('Oak Ave', 'Chicago', 'IL', '456', '60616', 'USA'),
+('Pine Rd', 'Naperville', 'IL', '789', '60540', 'USA');
+
+-- Sample project data
+INSERT INTO Project (address_id, client, client_phone, client_email, size, start_date, last_interaction_date, employee_creator)
+VALUES 
+(1, 'John Smith', '555-1234', 'john.smith@email.com', 'M', '2025-10-01', '2025-10-10', 'Edwin');
+
+-- Verify results
+SELECT * FROM Address;
+SELECT * FROM Project;
+
+
+
+'''
 -- Sample addresses (for testing, can remove later)
 INSERT INTO Address (street_number, street_name, city, state, postal_code, country)
 VALUES 
@@ -44,3 +69,4 @@ SELECT * FROM Address;
 
 -- Check all projects
 SELECT * FROM Project;
+'''
