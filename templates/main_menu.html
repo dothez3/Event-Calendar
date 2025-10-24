@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+
+  <div class="border rounded p-4 shadow" style="background:#f8f9fa; width:420px;">
+
+    <h3 class="text-center mb-4">Main Menu</h3>
+
+
+    <div class="row g-3">
+
+      <div class="col-6 d-grid">
+
+        <a href="{{ url_for('projects') }}" class="btn btn-primary">Create Project</a>
+
+      </div>
+
+      <div class="col-6 d-grid">
+
+        <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary">Search Projects</a>
+
+      </div>
+
+
+      <div class="col-6 d-grid">
+
+        <a href="#" class="btn btn-secondary disabled">Create Report</a>
+
+      </div>
+
+      <div class="col-6 d-grid">
+
+        <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">Search Clients</a>
+
+      </div>
+
+
+      <div class="col-6 d-grid">
+
+        <a href="#" class="btn btn-secondary disabled">Create Graph</a>
+
+      </div>
+
+      <div class="col-6 d-grid">
+
+        <a href="#" class="btn btn-outline-secondary disabled">Search Buildings</a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

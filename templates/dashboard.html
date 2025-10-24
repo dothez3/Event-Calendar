@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-3">Dashboard</h2>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h5 class="card-title">Stats</h5>
+      <ul class="mb-0">
+        <li>Total Projects: {{ stats.projects }}</li>
+        <li>Total Clients: {{ stats.clients }}</li>
+        <li>Total Events: {{ stats.events }}</li>
+      </ul>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h5 class="card-title">Recent Projects</h5>
+      <ul class="mb-0">
+        {% for p in projects %}
+          <li>{{ p.name }} {% if p.client %}— {{ p.client.name }}{% endif %}</li>
+        {% else %}
+          <li>No projects yet.</li>
+        {% endfor %}
+      </ul>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <h5 class="card-title">Recent Events</h5>
+      <ul class="mb-0">
+        {% for e in events %}
+          <li>{{ e.title }} {% if e.project %}for {{ e.project.name }}{% endif %} — {{ e.start.strftime('%Y-%m-%d %H:%M') }}</li>
+        {% else %}
+          <li>No events yet.</li>
+        {% endfor %}
+      </ul>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center">
+  <h2>Events</h2>
+</div>
+<form method="post" action="{{ url_for('events_create') }}" class="row g-3 mb-4">
+  <div class="col-md-3"><input name="title" class="form-control" placeholder="Title" required></div>
+  <div class="col-md-3">
+    <select name="project_id" class="form-select">
+      <option value="">No project</option>
+      {% for p in projects %}
+        <option value="{{ p.id }}">{{ p.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3"><input name="start" type="datetime-local" class="form-control" required></div>
+  <div class="col-md-3"><input name="end" type="datetime-local" class="form-control"></div>
+  <div class="col-md-2"><button class="btn btn-success w-100">Create</button></div>
+</form>
+
+<table class="table table-striped">
+  <thead><tr><th>Title</th><th>Project</th><th>Start</th><th>End</th></tr></thead>
+  <tbody>
+  {% for e in events %}
+    <tr>
+      <td>{{ e.title }}</td>
+      <td>{{ e.project.name if e.project else "-" }}</td>
+      <td>{{ e.start.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ e.end.strftime('%Y-%m-%d %H:%M') if e.end else "-" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">No events yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center">
+  <h2>Clients</h2>
+</div>
+<form method="post" action="{{ url_for('clients_create') }}" class="row g-3 mb-4">
+  <div class="col-md-4">
+    <input name="name" class="form-control" placeholder="Client name" required>
+  </div>
+  <div class="col-md-3">
+    <input name="contact" class="form-control" placeholder="Contact email">
+  </div>
+  <div class="col-md-4">
+    <input name="notes" class="form-control" placeholder="Notes">
+  </div>
+  <div class="col-md-1">
+    <button class="btn btn-success w-100">Add</button>
+  </div>
+</form>
+<table class="table table-striped">
+  <thead><tr><th>Name</th><th>Contact</th><th>Notes</th></tr></thead>
+  <tbody>
+  {% for c in clients %}
+    <tr><td>{{ c.name }}</td><td>{{ c.contact }}</td><td>{{ c.notes }}</td></tr>
+  {% else %}
+    <tr><td colspan="3">No clients yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
