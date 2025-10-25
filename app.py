@@ -7,14 +7,26 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pms_demo.db"
+
+#Leave this commented for now
+#app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pms_demo.db"
+
+#This is to make sure either database works, sql lite or MySQL
+import os
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv (
+    "DATABASE_URL",
+    f"sqlite:///{os.path.join(BASE_DIR, 'pms_demo.db')}"
+)
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
-# ---------- Models ----------
+#Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -54,7 +66,7 @@ class Event(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ---------- CLI to init DB ----------
+#CLI to init DB
 @app.cli.command("init-db")
 def init_db():
     db.drop_all()
@@ -73,7 +85,7 @@ def init_db():
     db.session.commit()
     print("Initialized the database. Login with demo@pms.local / demo123")
 
-# ---------- Routes ----------
+#Routes
 @app.route("/")
 def index():
     if current_user.is_authenticated:
@@ -193,7 +205,7 @@ def projects_create():
         flash("Project created", "success")
     return redirect(url_for("projects"))
 
-# ---- Events (minimal) ----
+#Events (minimal)
 @app.route("/events")
 @login_required
 def events():
