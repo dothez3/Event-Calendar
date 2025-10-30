@@ -190,6 +190,51 @@ def clients_create():
         flash("Client added", "success")
     return redirect(url_for("clients"))
 
+# ---- Buildings CRUD (minimal) ----
+@app.route("/buildings")
+@login_required
+def buildings():
+    return render_template("buildings.html", buildings=Building.query.all())
+
+@app.route("/buildings/create", methods=["POST"])
+@login_required
+def buildings_create():
+    name = request.form["name"].strip()
+    street = request.form.get("street", "").strip()
+    city = request.form.get("city", "").strip()
+    state = request.form.get("state", "").strip()
+    zipc = request.form.get("zip", "").strip()
+    notes = request.form.get("notes", "").strip()
+    if not name:
+        flash("Building name required", "warning")
+    else:
+        b = Building(name=name, street=street, city=city, state=state, zip=zipc, notes=notes)
+        db.session.add(b); db.session.commit()
+        flash("Building added", "success")
+    return redirect(url_for("buildings"))
+
+@app.route("/buildings/<int:id>/update", methods=["POST"])
+@login_required
+def buildings_update(id):
+    b = Building.query.get_or_404(id)
+    b.name = request.form["name"].strip()
+    b.street = request.form.get("street", "").strip()
+    b.city = request.form.get("city", "").strip()
+    b.state = request.form.get("state", "").strip()
+    b.zip = request.form.get("zip", "").strip()
+    b.notes = request.form.get("notes", "").strip()
+    db.session.commit()
+    flash("Building updated", "success")
+    return redirect(url_for("buildings"))
+
+@app.route("/buildings/<int:id>/delete", methods=["POST"])
+@login_required
+def buildings_delete(id):
+    b = Building.query.get_or_404(id)
+    db.session.delete(b); db.session.commit()
+    flash("Building deleted", "info")
+    return redirect(url_for("buildings"))
+
 # ---- Projects CRUD (minimal) ----
 @app.route("/projects")
 @login_required
