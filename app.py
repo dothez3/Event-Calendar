@@ -44,6 +44,15 @@ class Client(db.Model):
     name = db.Column(db.String(120), nullable=False)
     contact = db.Column(db.String(120))
     notes = db.Column(db.Text)
+    
+class Building(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    street = db.Column(db.String(120))
+    city = db.Column(db.String(80))
+    state = db.Column(db.String(20))
+    zip = db.Column(db.String(20))
+    notes = db.Column(db.Text)
 
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
