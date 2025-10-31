@@ -27,6 +27,14 @@
       <td>{{ e.project.name if e.project else "-" }}</td>
       <td>{{ e.start.strftime('%Y-%m-%d %H:%M') }}</td>
       <td>{{ e.end.strftime('%Y-%m-%d %H:%M') if e.end else "-" }}</td>
+      <td class="text-end">
+        <form class="d-inline" method="post" action="{{ url_for('events_delete', id=e.id) }}">
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Delete this event?')">
+            Delete
+          </button>
+        </form>
+      </td>
     </tr>
   {% else %}
     <tr><td colspan="4">No events yet.</td></tr>
