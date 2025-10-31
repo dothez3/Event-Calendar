@@ -21,9 +21,18 @@
   <thead><tr><th>Name</th><th>Contact</th><th>Notes</th></tr></thead>
   <tbody>
   {% for c in clients %}
-    <tr><td>{{ c.name }}</td><td>{{ c.contact }}</td><td>{{ c.notes }}</td></tr>
+    <tr><td>{{ c.name }}</td><td>{{ c.contact }}</td><td>{{ c.notes }}</td>
+    <form class="d-inline" method="post" action="{{ url_for('clients_delete', id=c.id) }}">
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Delete this client?')">
+            Delete
+          </button>
+        </form>
+      </td>
+    </tr>
   {% else %}
-    <tr><td colspan="3">No clients yet.</td></tr>
+    <tr><td colspan="4" class="text-center text-muted">No clients yet.</td>
+    </tr>
   {% endfor %}
   </tbody>
 </table>
