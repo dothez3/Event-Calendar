@@ -33,9 +33,17 @@
       <td>{{ p.client.name if p.client else "-" }}</td>
       <td>{{ p.status }}</td>
       <td>{{ p.due_date or "-" }}</td>
+      <td class="text-end">
+        <form class="d-inline" method="post" action="{{ url_for('projects_delete', id=p.id) }}">
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Delete this project?')">
+            Delete
+          </button>
+        </form>
+      </td>
     </tr>
   {% else %}
-    <tr><td colspan="4">No projects yet.</td></tr>
+    <tr><td colspan="5" class="text-center text-muted">No projects yet.</td> </tr>
   {% endfor %}
   </tbody>
 </table>
