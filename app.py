@@ -189,7 +189,23 @@ def clients_create():
         db.session.commit()
         flash("Client added", "success")
     return redirect(url_for("clients"))
+    
+@app.route("/clients/<int:id>/delete", methods=["POST"])
+@login_required
+def clients_delete(id):
+    """Delete a client unless they still have projects."""
+    c = Client.query.get_or_404(id)
 
+    # Safety: prevent deleting clients who still have projects
+    if Project.query.filter_by(client_id=c.id).count() > 0:
+        flash("Cannot delete: this client still has projects.", "warning")
+        return redirect(url_for("clients"))
+
+    db.session.delete(c)
+    db.session.commit()
+    flash("Client deleted successfully.", "info")
+    return redirect(url_for("clients"))
+    
 # ---- Buildings CRUD (minimal) ----
 @app.route("/buildings")
 @login_required
@@ -258,7 +274,23 @@ def projects_create():
         db.session.commit()
         flash("Project created", "success")
     return redirect(url_for("projects"))
+    
+@app.route("/projects/<int:id>/delete", methods=["POST"])
+@login_required
+def projects_delete(id):
+    """Delete a project unless it still has events."""
+    p = Project.query.get_or_404(id)
 
+    # Safety: prevent deleting projects that have events
+    if Event.query.filter_by(project_id=p.id).count() > 0:
+        flash("Cannot delete: this project still has events.", "warning")
+        return redirect(url_for("projects"))
+
+    db.session.delete(p)
+    db.session.commit()
+    flash("Project deleted successfully.", "info")
+    return redirect(url_for("projects"))
+    
 #Events (minimal)
 @app.route("/events")
 @login_required
@@ -282,6 +314,15 @@ def events_create():
         db.session.commit()
         flash("Event created", "success")
     return redirect(url_for("events"))
-
+    
+@app.route("/events/<int:id>/delete", methods=["POST"])
+@login_required
+def events_delete(id):
+    e = Event.query.get_or_404(id)
+    db.session.delete(e)
+    db.session.commit()
+    flash("Event deleted.", "info")
+    return redirect(url_for("events"))
+    
 if __name__ == "__main__":
     app.run(debug=True)
