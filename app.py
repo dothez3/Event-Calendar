@@ -43,7 +43,7 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     contact = db.Column(db.String(120))
-    notes = db.Column(db.Text)
+    phone = db.Column(db.String(50)) 
     
 class Building(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -85,7 +85,7 @@ def init_db():
         u = User(email="demo@pms.local", name="Demo User")
         u.set_password("demo123")
         db.session.add(u)
-    c = Client(name="Bruce Wayne", contact="bwayne.enterprises@gmail.com", notes="VIP client")
+    c = Client(name="Bruce Wayne", contact="bwayne.enterprises@gmail.com", phone="555-01234")
     db.session.add(c)
     p = Project(name="Wayne Residential Complex", client=c, description="Refresh UI", status="In Progress", due_date=datetime(2025,12,23).date())
     db.session.add(p)
@@ -181,13 +181,24 @@ def clients():
 def clients_create():
     name = request.form["name"].strip()
     contact = request.form.get("contact","").strip()
-    notes = request.form.get("notes","").strip()
+    phone = request.form.get("phone","").strip()
     if not name:
         flash("Client name required", "warning")
     else:
-        db.session.add(Client(name=name, contact=contact, notes=notes))
+        db.session.add(Client(name=name, contact=contact, phone=phone))
         db.session.commit()
         flash("Client added", "success")
+    return redirect(url_for("clients"))
+    
+@app.route("/clients/<int:id>/update", methods=["POST"])
+@login_required
+def clients_update(id):
+    c = Client.query.get_or_404(id)
+    c.name = request.form["name"].strip()
+    c.contact = request.form.get("contact", "").strip()
+    c.phone = request.form.get("phone", "").strip()
+    db.session.commit()
+    flash("Client updated successfully.", "success")
     return redirect(url_for("clients"))
     
 @app.route("/clients/<int:id>/delete", methods=["POST"])
