@@ -11,17 +11,23 @@
     <input name="contact" class="form-control" placeholder="Contact email">
   </div>
   <div class="col-md-4">
-    <input name="notes" class="form-control" placeholder="Notes">
+    <input name="phone" class="form-control" placeholder="Contact phone">
   </div>
   <div class="col-md-1">
     <button class="btn btn-success w-100">Add</button>
   </div>
 </form>
 <table class="table table-striped align-middle">
-  <thead><tr><th>Name</th><th>Contact</th><th>Notes</th></tr></thead>
+   <thead>
+    <tr>
+      <th>Name</th>
+      <th>Contact</th>
+      <th>Phone</th>
+    </tr>
+  </thead>
   <tbody>
   {% for c in clients %}
-    <tr><td>{{ c.name }}</td><td>{{ c.contact }}</td><td>{{ c.notes }}</td>
+    <tr><td>{{ c.name }}</td><td>{{ c.contact }}</td><td>{{ c.phone }}</td>
     <form class="d-inline" method="post" action="{{ url_for('clients_delete', id=c.id) }}">
           <button class="btn btn-sm btn-outline-danger"
                   onclick="return confirm('Delete this client?')">
