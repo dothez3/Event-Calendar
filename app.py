@@ -63,13 +63,17 @@ class Project(db.Model):
     due_date = db.Column(db.Date)
     client = db.relationship("Client", backref="projects")
 
+#Improved Event class:
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    project_id = db.Column(db.Integer, db.ForeignKey("project.id"))
+    title = db.Column(db.String(100), nullable=False)
+    event_type = db.Column(db.String(50))  # e.g., 'Site Visit', 'Client Meeting'
     start = db.Column(db.DateTime, nullable=False)
     end = db.Column(db.DateTime)
-    project = db.relationship("Project", backref="events")
+    status = db.Column(db.String(20), default='Upcoming')  # Upcoming / Completed / Cancelled
+    notes = db.Column(db.Text)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    project = db.relationship('Project', backref='events')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -302,7 +306,7 @@ def projects_delete(id):
     flash("Project deleted successfully.", "info")
     return redirect(url_for("projects"))
     
-#Events (minimal)
+#Events
 @app.route("/events")
 @login_required
 def events():
@@ -312,28 +316,51 @@ def events():
 @login_required
 def events_create():
     title = request.form["title"].strip()
+    event_type = request.form.get("event_type")
     project_id = request.form.get("project_id")
     start = request.form.get("start")
-    end = request.form.get("end","").strip()
+    end = request.form.get("end", "").strip()
+    notes = request.form.get("notes", "").strip()
+    
     if not title or not start:
         flash("Title and start are required", "warning")
     else:
-        ev = Event(title=title, project_id=int(project_id) if project_id else None,
-                   start=datetime.fromisoformat(start),
-                   end=datetime.fromisoformat(end) if end else None)
+        ev = Event(
+            title=title,
+            event_type=event_type,
+            project_id=int(project_id) if project_id else None,
+            start=datetime.fromisoformat(start),
+            end=datetime.fromisoformat(end) if end else None,
+            notes=notes
+        )
         db.session.add(ev)
         db.session.commit()
         flash("Event created", "success")
     return redirect(url_for("events"))
-    
-@app.route("/events/<int:id>/delete", methods=["POST"])
+
+@app.route("/events/edit/<int:event_id>", methods=["POST"])
 @login_required
-def events_delete(id):
-    e = Event.query.get_or_404(id)
-    db.session.delete(e)
+def events_edit(event_id):
+    event = Event.query.get_or_404(event_id)
+    event.title = request.form["title"].strip()
+    event.event_type = request.form.get("event_type")
+    event.project_id = request.form.get("project_id")
+    event.start = datetime.fromisoformat(request.form["start"])
+    end = request.form.get("end", "").strip()
+    event.end = datetime.fromisoformat(end) if end else None
+    event.notes = request.form.get("notes", "").strip()
+    db.session.commit()
+    flash("Event updated successfully.", "success")
+    return redirect(url_for("events"))
+
+@app.route("/events/delete/<int:event_id>", methods=["POST"])
+@login_required
+def events_delete(event_id):
+    event = Event.query.get_or_404(event_id)
+    db.session.delete(event)
     db.session.commit()
     flash("Event deleted.", "info")
     return redirect(url_for("events"))
-    
+
 if __name__ == "__main__":
     app.run(debug=True)
