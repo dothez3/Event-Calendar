@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Proposal – {{ project.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            color: #333;
+            line-height: 1.5;
+        }
+        h1 {
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        h3 {
+            margin-top: 1.2rem;
+        }
+        .meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.25rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .label {
+            font-weight: bold;
+        }
+        ul {
+            margin: 0.3rem 0 0 1.25rem;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #aaa;
+            margin: 1rem 0;
+        }
+        .btn {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: 0.4rem 1rem;
+            background: #28a745;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        @media print {
+            .btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header with logo and company info -->
+    <div style="
+        border-top: 5px solid #ccc;
+        border-bottom: 5px solid #ccc;
+        padding: 10px 0;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    ">
+
+        <!-- Left: Logo -->
+        <div>
+            <img src="{{ url_for('static', filename='images/company_logo.png') }}"
+                 alt="Company Logo"
+                 style="height: 70px; opacity: 0.85; filter: grayscale(100%);">
+        </div>
+
+        <!-- Right: Company Info -->
+        <div style="
+            text-align: right;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 18px;
+            line-height: 1.4;
+        ">
+            <strong style="color: gray;">Craig F. Dothe Architect, LLC</strong><br>
+            <span style="color: gray;">ARCHITECTS &amp; PLANNERS</span>
+        </div>
+    </div>
+    
+    <hr>
+
+    <h1>ARCHITECTURAL SERVICES AGREEMENT</h1>
+
+    <!-- PROJECT INFO -->
+    <div class="meta">
+        <div><span class="label">DATE:</span> {{ current_date }}</div>
+        <div><span class="label">PROJECT NUMBER:</span> {{ project_number }}</div>
+
+        <div>
+            <span class="label">TO:</span>
+            {{ project.client.name if project.client else 'N/A' }}<br>
+            {{ project.client.address if project.client else '' }}
+        </div>
+
+        <div><span class="label">PROJECT:</span> {{ project.name }}</div>
+
+        <div><span class="label">PHONE NUMBER:</span> {{ project.client.phone if project.client else 'N/A' }}</div>
+        <div><span class="label">E MAIL:</span> {{ project.client.contact if project.client else 'N/A' }}</div>
+    </div>
+
+    <!-- BODY SECTIONS -->
+    <h3>PROJECT DESCRIPTION:</h3>
+    <p>{{ proposal_text }}</p>
+
+    <h3>SCOPE OF SERVICES:</h3>
+    <ul>
+        <li>Prepare Certification as required by the Fire Prevention Bureau</li>
+        <li>Prepare report of items needing correction prior to certification</li>
+    </ul>
+
+    <h3>ADDITIONAL SERVICES NOT INCLUDED:</h3>
+    <ul>
+        <li>Significant scope changes beyond initial agreement</li>
+        <li>Architectural drawings for replacement of the fire escape system</li>
+    </ul>
+
+    <h3>GENERAL CONDITIONS:</h3>
+    <ul>
+        <li>Additional certification billed per stair if required</li>
+        <li>Client provides access and documentation for egress verification</li>
+    </ul>
+
+    <h3>FEE BASIS:</h3>
+    <ul>
+        <li>Retainer — $1,250.00</li>
+        <li>Delivery of Certification and/or Report — $1,250.00</li>
+    </ul>
+
+    <h3>ACCEPTANCE:</h3>
+    <p>
+        Signatures below represent approval by both parties. Work shall begin upon signing of this agreement.<br>
+        Please return one signed original. Thank you.
+    </p>
+
+    <div style="margin-top: 40px;">
+        <div><strong>Craig Dothe</strong></div>
+        <div>Craig Dothe RA/PP</div>
+
+        <br><br>
+
+        <div style="display: flex; justify-content: space-between;">
+            <div>Date: ____________</div>
+            <div>Client Signature: ____________</div>
+        </div>
+    </div>
+
+    <a href="#" onclick="window.print()" class="btn">Print / Save as PDF</a>
+</body>
+</html>

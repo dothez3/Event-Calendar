@@ -33,10 +33,17 @@
       <td>{{ p.client.name if p.client else "-" }}</td>
       <td>{{ p.status }}</td>
       <td>{{ p.due_date or "-" }}</td>
+
       <td class="text-end">
+        <a href="{{ url_for('generate_invoice', id=p.id) }}" class="btn btn-sm btn-outline-primary">
+          Invoice
+        </a>
+        <a href="{{ url_for('generate_proposal', id=p.id) }}" class="btn btn-sm btn-outline-secondary">
+          Proposal
+        </a>
         <form class="d-inline" method="post" action="{{ url_for('projects_delete', id=p.id) }}">
           <button class="btn btn-sm btn-outline-danger"
-                  onclick="return confirm('Delete this project?')">
+              onclick="return confirm('Delete this project?')">
             Delete
           </button>
         </form>
