@@ -385,6 +385,55 @@ def events_delete(event_id):
     db.session.commit()
     flash("Event deleted.", "info")
     return redirect(url_for("events"))
+#Generate Invoice and Proposal
+#Invoice route
+@app.route("/project/<int:id>/generate_invoice")
+def generate_invoice(id):
+    project = Project.query.get_or_404(id)
+    invoice_text = build_invoice_text(project)
+    current_date = datetime.now().strftime("%m/%d/%Y")
+    project_number = "2025-37"  # placeholder
+    return render_template(
+        "invoice.html", 
+        project=project, 
+        invoice_text=invoice_text, 
+        current_date=current_date,
+        project_number=project_number
+    )
+#Proposal route
+@app.route("/project/<int:id>/generate_proposal")
+def generate_proposal(id):
+    project = Project.query.get_or_404(id)
+    proposal_text = build_proposal_text(project)
+    current_date = datetime.now().strftime("%m/%d/%Y")  # Add current date
+    project_number = "2025-37"  # placeholder
+    return render_template(
+        "proposal.html",
+        project=project,
+        proposal_text=proposal_text,
+        current_date=current_date,
+        project_number=project_number
+    )
 
+def build_invoice_text(project):
+    #later you can replace this with a call to an AI API
+    return (
+        f"Invoice for project '{project.name}'\n\n"
+        f"Client: {project.client.name if project.client else 'N/A'}\n"
+        f"Description: {project.description or 'No description provided.'}\n"
+        f"Status: {project.status}\n"
+    )
+
+def build_proposal_text(project):
+    return (
+        f"Proposal for {project.name}\n\n"
+        f"This document outlines the proposed architectural services for "
+        f"{project.client.name if project.client else 'the client'}. "
+        "The scope includes design coordination, site review, and documentation. "
+        "Fees and schedule to be confirmed upon client approval."
+    )
+
+#when ready to use ai, use line below and replace bodies  of two functions above
+#return call_ai_api(prompt)
 if __name__ == "__main__":
     app.run(debug=True)
