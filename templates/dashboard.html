@@ -16,11 +16,19 @@
     <div class="card"><div class="card-body">
       <h5 class="card-title">Recent Projects</h5>
       <ul class="mb-0">
-        {% for p in projects %}
-          <li>{{ p.name }} {% if p.client %}— {{ p.client.name }}{% endif %}</li>
-        {% else %}
-          <li>No projects yet.</li>
-        {% endfor %}
+       {% for p in recent_projects %}
+  <li>
+    {{ p.name }}
+    {% if p.client %}— {{ p.client.name }}{% endif %}
+    {% if p.activities %}
+      <small class="text-muted">
+        ({{ p.activities[-1].happened_at.strftime('%Y-%m-%d %H:%M') }})
+      </small>
+    {% endif %}
+  </li>
+{% else %}
+  <li>No recent projects yet.</li>
+{% endfor %}
       </ul>
     </div></div>
   </div>
