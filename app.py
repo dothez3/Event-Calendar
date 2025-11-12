@@ -337,6 +337,8 @@ def projects_delete(id):
     if Event.query.filter_by(project_id=p.id).count() > 0:
         flash("Cannot delete: this project still has events.", "warning")
         return redirect(url_for("projects"))
+    
+    Activity.query.filter_by(project_id=p.id).delete(synchronize_session=False)
 
     db.session.delete(p)
     db.session.commit()
