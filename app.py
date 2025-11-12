@@ -32,6 +32,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="employee")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -91,6 +92,13 @@ def init_db():
         db.session.add(u)
     c = Client(name="Bruce Wayne", contact="bwayne.enterprises@gmail.com", phone="555-01234")
     db.session.add(c)
+
+    #client login
+    if not User.query.filter_by(email="bwayne.enterprises@gmail.com").first():
+        cu = User(email="bwayne.enterprises@gmail.com", name="Bruce Wayne", role="client") 
+        cu.password_hash = generate_password_hash("client123")  
+        db.session.add(cu)
+
     p = Project(name="Wayne Residential Complex", client=c, description="Refresh UI", status="In Progress", due_date=datetime(2025,12,23).date())
     db.session.add(p)
     e = Event(title="Pre-Construction Planning", project=p, start=datetime.now())
@@ -159,15 +167,20 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    projects = Project.query.order_by(Project.id.desc()).limit(5).all()
-    events = Event.query.order_by(Event.start.desc()).limit(5).all()
-    stats = {
-        "projects": Project.query.count(),
-        "clients": Client.query.count(),
-        "events": Event.query.count()
-    }
-    return redirect(url_for("main_menu"))
-    #return render_template("dashboard.html", projects=projects, events=events, stats=stats)
+    if current_user.role == "employee": 
+        projects = Project.query.order_by(Project.id.desc()).limit(5).all()
+        events = Event.query.order_by(Event.start.desc()).limit(5).all()
+        stats = {
+            "projects": Project.query.count(),
+            "clients": Client.query.count(),
+            "events": Event.query.count()
+        }
+        #return redirect(url_for("main_menu"))
+        return render_template("dashboard.html", projects=projects, events=events, stats=stats) 
+    else:  # client 
+        projects = Project.query.join(Client).filter(Client.email == current_user.email).order_by(Project.id.desc()).all()
+        events = Event.query.join(Project).join(Client).filter(Client.email == current_user.email).order_by(Event.start.desc()).all()
+        return render_template("dashboard_client.html", projects=projects, events=events)
 #Main Menu
 @app.route("/main")
 @login_required
@@ -178,11 +191,17 @@ def main_menu():
 @app.route("/clients")
 @login_required
 def clients():
+    if current_user.role != "employee": 
+            flash("You do not have permission to access this page.", "danger")
+            return redirect(url_for("dashboard")) 
     return render_template("clients.html", clients=Client.query.all())
 
 @app.route("/clients/create", methods=["POST"])
 @login_required
 def clients_create():
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger") 
+        return redirect(url_for("dashboard")) 
     name = request.form["name"].strip()
     contact = request.form.get("contact","").strip()
     phone = request.form.get("phone","").strip()
@@ -197,6 +216,10 @@ def clients_create():
 @app.route("/clients/<int:id>/update", methods=["POST"])
 @login_required
 def clients_update(id):
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+    
     c = Client.query.get_or_404(id)
     c.name = request.form["name"].strip()
     c.contact = request.form.get("contact", "").strip()
@@ -209,6 +232,11 @@ def clients_update(id):
 @login_required
 def clients_delete(id):
     """Delete a client unless they still have projects."""
+    
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+    
     c = Client.query.get_or_404(id)
 
     # Safety: prevent deleting clients who still have projects
@@ -225,11 +253,18 @@ def clients_delete(id):
 @app.route("/buildings")
 @login_required
 def buildings():
+    if current_user.role != "employee": 
+        flash("You do not have permission to access this page.", "danger") 
+        return redirect(url_for("dashboard")) 
     return render_template("buildings.html", buildings=Building.query.all())
 
 @app.route("/buildings/create", methods=["POST"])
 @login_required
 def buildings_create():
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+     
     name = request.form["name"].strip()
     street = request.form.get("street", "").strip()
     city = request.form.get("city", "").strip()
@@ -247,6 +282,11 @@ def buildings_create():
 @app.route("/buildings/<int:id>/update", methods=["POST"])
 @login_required
 def buildings_update(id):
+
+    if current_user.role != "employee":
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+    
     b = Building.query.get_or_404(id)
     b.name = request.form["name"].strip()
     b.street = request.form.get("street", "").strip()
@@ -261,6 +301,10 @@ def buildings_update(id):
 @app.route("/buildings/<int:id>/delete", methods=["POST"])
 @login_required
 def buildings_delete(id):
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+    
     b = Building.query.get_or_404(id)
     db.session.delete(b); db.session.commit()
     flash("Building deleted", "info")
@@ -270,11 +314,20 @@ def buildings_delete(id):
 @app.route("/projects")
 @login_required
 def projects():
+    if current_user.role != "employee": 
+        all_projects = Project.query.order_by(Project.id.desc()).all()
+    else: 
+        all_projects = Project.query.join(Client).filter(Client.name == current_user.name).order_by(Project.id.desc()).all()
+
     return render_template("projects.html", projects=Project.query.all(), clients=Client.query.all())
 
 @app.route("/projects/create", methods=["POST"])
 @login_required
 def projects_create():
+    if current_user.role != "employee":
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+
     name = request.form["name"].strip()
     client_id = request.form.get("client_id")
     description = request.form.get("description","").strip()
@@ -294,6 +347,9 @@ def projects_create():
 @login_required
 def projects_delete(id):
     """Delete a project unless it still has events."""
+    if current_user.role != "employee":
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
     p = Project.query.get_or_404(id)
 
     # Safety: prevent deleting projects that have events
@@ -310,11 +366,22 @@ def projects_delete(id):
 @app.route("/events")
 @login_required
 def events():
+    if current_user.role != "employee": 
+        all_events = Event.query.order_by(Event.start.desc()).all()
+    else:
+        # client: show only events for projects linked to this client
+        all_events = Event.query.join(Project).join(Client).filter(Client.name == current_user.name).order_by(Event.start.desc()).all()
+
+
     return render_template("events.html", events=Event.query.order_by(Event.start.desc()).all(), projects=Project.query.all())
 
 @app.route("/events/create", methods=["POST"])
 @login_required
 def events_create():
+    if current_user.role != "employee":  
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+    
     title = request.form["title"].strip()
     event_type = request.form.get("event_type")
     project_id = request.form.get("project_id")
@@ -341,6 +408,11 @@ def events_create():
 @app.route("/events/edit/<int:event_id>", methods=["POST"])
 @login_required
 def events_edit(event_id):
+    
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+      
     event = Event.query.get_or_404(event_id)
     event.title = request.form["title"].strip()
     event.event_type = request.form.get("event_type")
@@ -356,6 +428,10 @@ def events_edit(event_id):
 @app.route("/events/delete/<int:event_id>", methods=["POST"])
 @login_required
 def events_delete(event_id):
+    if current_user.role != "employee": 
+        flash("You do not have permission to perform this action.", "danger")
+        return redirect(url_for("dashboard"))
+    
     event = Event.query.get_or_404(event_id)
     db.session.delete(event)
     db.session.commit()
