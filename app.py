@@ -299,20 +299,33 @@ def projects():
 def projects_create():
     name = request.form["name"].strip()
     client_id = request.form.get("client_id")
-    description = request.form.get("description","").strip()
-    due_date = request.form.get("due_date","").strip()
-    status = request.form.get("status","Planned").strip()
+    description = request.form.get("description", "").strip()
+    due_date = request.form.get("due_date", "").strip()
+    status = request.form.get("status", "Planned").strip()
+
     if not name:
         flash("Project name required", "warning")
-    else:
-        p = Project(name=name, client_id=int(client_id) if client_id else None, description=description, status=status,
-                    due_date=datetime.fromisoformat(due_date).date() if due_date else None)
-        db.session.add(p)
-        db.session.flush()
-        db.session.add(p)(Activity(user_id=current_user.id, project_id=p.id))
-        db.session.commit()
-        flash("Project created", "success")
+        return redirect(url_for("projects"))
+
+    # --- create Project ---
+    p = Project(
+        name=name,
+        client_id=int(client_id) if client_id else None,
+        description=description,
+        status=status,
+        due_date=datetime.fromisoformat(due_date).date() if due_date else None,
+    )
+    db.session.add(p)
+    db.session.flush()  # ensures p.id exists
+
+    # --- log Activity ---
+    new_activity = Activity(user_id=current_user.id, project_id=p.id)
+    db.session.add(new_activity)
+
+    db.session.commit()
+    flash("Project created", "success")
     return redirect(url_for("projects"))
+
     
 @app.route("/projects/<int:id>/delete", methods=["POST"])
 @login_required
