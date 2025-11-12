@@ -17,17 +17,21 @@
     <button class="btn btn-success w-100">Add</button>
   </div>
 </form>
-<table class="table table-striped align-middle">
+<table class="table table-hover align-middle">
    <thead>
     <tr>
       <th>Name</th>
       <th>Contact</th>
       <th>Phone</th>
+      <th class="text-end">Actions</th>
+
     </tr>
   </thead>
   <tbody>
   {% for c in clients %}
     <tr><td>{{ c.name }}</td><td>{{ c.contact }}</td><td>{{ c.phone }}</td>
+    <td class="text-end">
+
     <form class="d-inline" method="post" action="{{ url_for('clients_delete', id=c.id) }}">
           <button class="btn btn-sm btn-outline-danger"
                   onclick="return confirm('Delete this client?')">
