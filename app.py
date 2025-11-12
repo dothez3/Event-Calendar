@@ -292,7 +292,20 @@ def buildings_delete(id):
 @app.route("/projects")
 @login_required
 def projects():
-    return render_template("projects.html", projects=Project.query.all(), clients=Client.query.all())
+    q = request.args.get("q", "").strip()
+    query = Project.query.join(Client, isouter=True)
+
+    if q:
+        query = query.filter(
+            or_(
+                Project.name.ilike(f"%{q}%"),
+                Project.description.ilike(f"%{q}%"),
+                Client.name.ilike(f"%{q}%")
+            )
+        )
+
+    projects = query.order_by(Project.id.desc()).all()
+    return render_template("projects.html", projects=projects, q=q, clients=Client.query.all())
 
 @app.route("/projects/create", methods=["POST"])
 @login_required
