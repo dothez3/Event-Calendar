@@ -32,7 +32,6 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default="employee")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -80,6 +79,15 @@ class Event(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+class Activity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), index=True, nullable=False)
+    happened_at = db.Column(db.DateTime, default=datetime.utcnow, index=True, nullable=False)
+
+    user = db.relationship('User', backref='activities')
+    project = db.relationship('Project', backref='activities')
+
 #CLI to init DB
 @app.cli.command("init-db")
 def init_db():
@@ -92,13 +100,6 @@ def init_db():
         db.session.add(u)
     c = Client(name="Bruce Wayne", contact="bwayne.enterprises@gmail.com", phone="555-01234")
     db.session.add(c)
-
-    #client login
-    if not User.query.filter_by(email="bwayne.enterprises@gmail.com").first():
-        cu = User(email="bwayne.enterprises@gmail.com", name="Bruce Wayne", role="client") 
-        cu.password_hash = generate_password_hash("client123")  
-        db.session.add(cu)
-
     p = Project(name="Wayne Residential Complex", client=c, description="Refresh UI", status="In Progress", due_date=datetime(2025,12,23).date())
     db.session.add(p)
     e = Event(title="Pre-Construction Planning", project=p, start=datetime.now())
@@ -130,7 +131,7 @@ def register():
         return redirect(url_for("login"))
     return render_template("register.html")
 
-from sqlalchemy import or_, func  # add this import at the top
+from sqlalchemy import or_, func , desc # add this import at the top
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -167,20 +168,28 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    if current_user.role == "employee": 
-        projects = Project.query.order_by(Project.id.desc()).limit(5).all()
-        events = Event.query.order_by(Event.start.desc()).limit(5).all()
-        stats = {
-            "projects": Project.query.count(),
-            "clients": Client.query.count(),
-            "events": Event.query.count()
-        }
-        #return redirect(url_for("main_menu"))
-        return render_template("dashboard.html", projects=projects, events=events, stats=stats) 
-    else:  # client 
-        projects = Project.query.join(Client).filter(Client.email == current_user.email).order_by(Project.id.desc()).all()
-        events = Event.query.join(Project).join(Client).filter(Client.email == current_user.email).order_by(Event.start.desc()).all()
-        return render_template("dashboard_client.html", projects=projects, events=events)
+    recent_projects = (
+        db.session.query(Project)
+        .join(Activity, Activity.project_id == Project.id)
+        .filter(Activity.user_id == current_user.id)
+        .order_by(desc(Activity.happened_at))
+        .limit(6)
+        .all()
+    )
+
+    events = Event.query.order_by(Event.start.desc()).limit(5).all()
+    stats = {
+        "projects": Project.query.count(),
+        "clients": Client.query.count(),
+        "events": Event.query.count()
+    }
+
+    return render_template(
+        "dashboard.html",
+        recent_projects=recent_projects,
+        events=events,
+        stats=stats
+    )
 #Main Menu
 @app.route("/main")
 @login_required
@@ -191,17 +200,11 @@ def main_menu():
 @app.route("/clients")
 @login_required
 def clients():
-    if current_user.role != "employee": 
-            flash("You do not have permission to access this page.", "danger")
-            return redirect(url_for("dashboard")) 
     return render_template("clients.html", clients=Client.query.all())
 
 @app.route("/clients/create", methods=["POST"])
 @login_required
 def clients_create():
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger") 
-        return redirect(url_for("dashboard")) 
     name = request.form["name"].strip()
     contact = request.form.get("contact","").strip()
     phone = request.form.get("phone","").strip()
@@ -216,10 +219,6 @@ def clients_create():
 @app.route("/clients/<int:id>/update", methods=["POST"])
 @login_required
 def clients_update(id):
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-    
     c = Client.query.get_or_404(id)
     c.name = request.form["name"].strip()
     c.contact = request.form.get("contact", "").strip()
@@ -232,11 +231,6 @@ def clients_update(id):
 @login_required
 def clients_delete(id):
     """Delete a client unless they still have projects."""
-    
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-    
     c = Client.query.get_or_404(id)
 
     # Safety: prevent deleting clients who still have projects
@@ -253,18 +247,11 @@ def clients_delete(id):
 @app.route("/buildings")
 @login_required
 def buildings():
-    if current_user.role != "employee": 
-        flash("You do not have permission to access this page.", "danger") 
-        return redirect(url_for("dashboard")) 
     return render_template("buildings.html", buildings=Building.query.all())
 
 @app.route("/buildings/create", methods=["POST"])
 @login_required
 def buildings_create():
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-     
     name = request.form["name"].strip()
     street = request.form.get("street", "").strip()
     city = request.form.get("city", "").strip()
@@ -282,11 +269,6 @@ def buildings_create():
 @app.route("/buildings/<int:id>/update", methods=["POST"])
 @login_required
 def buildings_update(id):
-
-    if current_user.role != "employee":
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-    
     b = Building.query.get_or_404(id)
     b.name = request.form["name"].strip()
     b.street = request.form.get("street", "").strip()
@@ -301,10 +283,6 @@ def buildings_update(id):
 @app.route("/buildings/<int:id>/delete", methods=["POST"])
 @login_required
 def buildings_delete(id):
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-    
     b = Building.query.get_or_404(id)
     db.session.delete(b); db.session.commit()
     flash("Building deleted", "info")
@@ -314,20 +292,11 @@ def buildings_delete(id):
 @app.route("/projects")
 @login_required
 def projects():
-    if current_user.role != "employee": 
-        all_projects = Project.query.order_by(Project.id.desc()).all()
-    else: 
-        all_projects = Project.query.join(Client).filter(Client.name == current_user.name).order_by(Project.id.desc()).all()
-
     return render_template("projects.html", projects=Project.query.all(), clients=Client.query.all())
 
 @app.route("/projects/create", methods=["POST"])
 @login_required
 def projects_create():
-    if current_user.role != "employee":
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-
     name = request.form["name"].strip()
     client_id = request.form.get("client_id")
     description = request.form.get("description","").strip()
@@ -339,6 +308,8 @@ def projects_create():
         p = Project(name=name, client_id=int(client_id) if client_id else None, description=description, status=status,
                     due_date=datetime.fromisoformat(due_date).date() if due_date else None)
         db.session.add(p)
+        db.session.flush()
+        db.session.add(p)(Activity(user_id=current_user.id, project_id=p.id))
         db.session.commit()
         flash("Project created", "success")
     return redirect(url_for("projects"))
@@ -347,9 +318,6 @@ def projects_create():
 @login_required
 def projects_delete(id):
     """Delete a project unless it still has events."""
-    if current_user.role != "employee":
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
     p = Project.query.get_or_404(id)
 
     # Safety: prevent deleting projects that have events
@@ -366,22 +334,11 @@ def projects_delete(id):
 @app.route("/events")
 @login_required
 def events():
-    if current_user.role != "employee": 
-        all_events = Event.query.order_by(Event.start.desc()).all()
-    else:
-        # client: show only events for projects linked to this client
-        all_events = Event.query.join(Project).join(Client).filter(Client.name == current_user.name).order_by(Event.start.desc()).all()
-
-
     return render_template("events.html", events=Event.query.order_by(Event.start.desc()).all(), projects=Project.query.all())
 
 @app.route("/events/create", methods=["POST"])
 @login_required
 def events_create():
-    if current_user.role != "employee":  
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-    
     title = request.form["title"].strip()
     event_type = request.form.get("event_type")
     project_id = request.form.get("project_id")
@@ -408,11 +365,6 @@ def events_create():
 @app.route("/events/edit/<int:event_id>", methods=["POST"])
 @login_required
 def events_edit(event_id):
-    
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-      
     event = Event.query.get_or_404(event_id)
     event.title = request.form["title"].strip()
     event.event_type = request.form.get("event_type")
@@ -428,68 +380,11 @@ def events_edit(event_id):
 @app.route("/events/delete/<int:event_id>", methods=["POST"])
 @login_required
 def events_delete(event_id):
-    if current_user.role != "employee": 
-        flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for("dashboard"))
-    
     event = Event.query.get_or_404(event_id)
     db.session.delete(event)
     db.session.commit()
     flash("Event deleted.", "info")
     return redirect(url_for("events"))
-
-#Generate Invoice and Proposal
-#Invoice route
-@app.route("/project/<int:id>/generate_invoice")
-def generate_invoice(id):
-    project = Project.query.get_or_404(id)
-    invoice_text = build_invoice_text(project)
-    current_date = datetime.now().strftime("%m/%d/%Y")
-    project_number = "2025-37"  # placeholder
-    return render_template(
-        "invoice.html", 
-        project=project, 
-        invoice_text=invoice_text, 
-        current_date=current_date,
-        project_number=project_number
-    )
-#Proposal route
-@app.route("/project/<int:id>/generate_proposal")
-def generate_proposal(id):
-    project = Project.query.get_or_404(id)
-    proposal_text = build_proposal_text(project)
-    current_date = datetime.now().strftime("%m/%d/%Y")  # Add current date
-    project_number = "2025-37"  # placeholder
-    return render_template(
-        "proposal.html",
-        project=project,
-        proposal_text=proposal_text,
-        current_date=current_date,
-        project_number=project_number
-    )
-
-def build_invoice_text(project):
-    #later you can replace this with a call to an AI API
-    return (
-        f"Invoice for project '{project.name}'\n\n"
-        f"Client: {project.client.name if project.client else 'N/A'}\n"
-        f"Description: {project.description or 'No description provided.'}\n"
-        f"Status: {project.status}\n"
-    )
-
-def build_proposal_text(project):
-    return (
-        f"Proposal for {project.name}\n\n"
-        f"This document outlines the proposed architectural services for "
-        f"{project.client.name if project.client else 'the client'}. "
-        "The scope includes design coordination, site review, and documentation. "
-        "Fees and schedule to be confirmed upon client approval."
-    )
-
-#when ready to use ai, use line below and replace bodies  of two functions above
-#return call_ai_api(prompt)
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
