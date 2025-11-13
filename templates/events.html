@@ -2,7 +2,8 @@
 {% block content %}
 <h2>Events</h2>
 
-<!-- Create Event Form -->
+<!--  changes: Create Event Form (Employee Only) -->
+{% if current_user.role == 'employee' %}
 <form method="post" action="{{ url_for('events_create') }}" class="row g-3 mb-4">
   <div class="col-md-3">
     <input name="title" class="form-control" placeholder="Title (e.g., Site Visit)" required>
@@ -37,6 +38,7 @@
     <button class="btn btn-success w-100">Create Event</button>
   </div>
 </form>
+{% endif %}
 
 <!-- Event Cards -->
 <div class="row row-cols-1 row-cols-md-3 g-4">
@@ -54,7 +56,8 @@
         {% endif %}
       </div>
 
-      <!-- Edit Section (Collapsible) -->
+      <!--  changes: Edit Section (Collapsible) - Employee Only -->
+      {% if current_user.role == 'employee' %}
       <div class="collapse" id="edit{{ e.id }}">
         <div class="card-body border-top bg-light">
           <form method="post" action="{{ url_for('events_edit', event_id=e.id) }}">
@@ -94,14 +97,17 @@
           </form>
         </div>
       </div>
+      {% endif %}
 
-      <!-- Card Footer -->
+      <!--  changes: Card Footer - Employee Only -->
+      {% if current_user.role == 'employee' %}
       <div class="card-footer d-flex justify-content-between">
         <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#edit{{ e.id }}">Edit</button>
         <form action="{{ url_for('events_delete', event_id=e.id) }}" method="post" style="display:inline;">
           <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this event?')">Delete</button>
         </form>
       </div>
+      {% endif %}
     </div>
   </div>
   {% else %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<!--  changes: User management page for employees -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>User Management</h2>
+  <span class="badge bg-primary">Employee Access Only</span>
+</div>
+
+
+<table class="table table-hover align-middle">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Current Role</th>
+      <th class="text-end">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for user in users %}
+    <tr>
+      <td>
+        {{ user.name }}
+        {% if user.id == current_user.id %}
+          <span class="badge bg-secondary">You</span>
+        {% endif %}
+      </td>
+      <td>{{ user.email }}</td>
+      <td>
+        {% if user.role == 'employee' %}
+          <span class="badge bg-success">Employee</span>
+        {% else %}
+          <span class="badge bg-info">Client</span>
+        {% endif %}
+      </td>
+      <td class="text-end">
+        {% if user.id != current_user.id %}
+          <!--  changes: Role change button -->
+          <form method="post" action="{{ url_for('change_user_role', user_id=user.id) }}" class="d-inline me-2">
+            {% if user.role == 'client' %}
+              <input type="hidden" name="role" value="employee">
+              <button class="btn btn-sm btn-outline-success" 
+                      onclick="return confirm('Change {{ user.name }} to Employee?')">
+                Promote to Employee
+              </button>
+            {% else %}
+              <input type="hidden" name="role" value="client">
+              <button class="btn btn-sm btn-outline-warning" 
+                      onclick="return confirm('Change {{ user.name }} to Client?')">
+                Demote to Client
+              </button>
+            {% endif %}
+          </form>
+          <!--  changes: Delete user button -->
+          <form method="post" action="{{ url_for('delete_user', user_id=user.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-danger" 
+                    onclick="return confirm('Delete user {{ user.name }}? This action cannot be undone.')">
+              Delete
+            </button>
+          </form>
+        {% else %}
+          <span class="text-muted small">Cannot modify own account</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr>
+      <td colspan="4" class="text-center text-muted">No users found.</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-4">
+  <a href="{{ url_for('projects') }}" class="btn btn-secondary">Back to Projects</a>
+</div>
+
+{% endblock %}

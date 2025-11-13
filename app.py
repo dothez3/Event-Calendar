@@ -24,7 +24,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
-login_manager.login_view = "login"
+login_manager.login_view = "index"
 
 #Models
 class User(UserMixin, db.Model):
@@ -32,6 +32,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), default='client', nullable=False)  # changes: Added role field ('client' or 'employee')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -63,6 +64,16 @@ class Project(db.Model):
     due_date = db.Column(db.Date)
     client = db.relationship("Client", backref="projects")
 
+#  changes: New model to track which client users are assigned to which projects
+class ProjectAssignment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    project = db.relationship('Project', backref='assignments')
+    user = db.relationship('User', backref='project_assignments')
+
 #Improved Event class:
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,6 +89,29 @@ class Event(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+#  changes: Helper functions for role-based access control
+from functools import wraps
+
+def employee_required(f):
+    """Decorator to require employee role"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'employee':
+            flash("Access denied. Employee privileges required.", "danger")
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_user_projects():
+    """Get projects accessible to current user based on role"""
+    if current_user.role == 'employee':
+        # Employees see all projects
+        return Project.query.all()
+    else:
+        # Clients only see assigned projects
+        assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
+        return Project.query.filter(Project.id.in_(assigned_project_ids)).all() if assigned_project_ids else []
 
 class Activity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -95,7 +129,7 @@ def init_db():
     db.create_all()
     # Seed demo data
     if not User.query.filter_by(email="demo@pms.local").first():
-        u = User(email="demo@pms.local", name="Demo User")
+        u = User(email="demo@pms.local", name="Demo User", role="employee")  #  changes: Set demo user as employee
         u.set_password("demo123")
         db.session.add(u)
     c = Client(name="Bruce Wayne", contact="bwayne.enterprises@gmail.com", phone="555-01234")
@@ -108,34 +142,11 @@ def init_db():
     print("Initialized the database. Login with demo@pms.local / demo123")
 
 #Routes
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
-    return render_template("index.html")
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        email = request.form["email"].strip().lower()
-        name = request.form["name"].strip()
-        password = request.form["password"]
-        if User.query.filter_by(email=email).first():
-            flash("Email already registered.", "warning")
-            return redirect(url_for("register"))
-        u = User(email=email, name=name)
-        u.set_password(password)
-        db.session.add(u)
-        db.session.commit()
-        flash("Registered! Please login.", "success")
-        return redirect(url_for("login"))
-    return render_template("register.html")
-
-from sqlalchemy import or_, func , desc # add this import at the top
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
+    
     if request.method == "POST":
         identifier = request.form["email"].strip()
         password   = request.form["password"]
@@ -156,7 +167,68 @@ def login():
             return redirect(url_for("dashboard"))
 
         flash("Invalid credentials", "danger")
+    
     return render_template("login.html")
+
+@app.route("/client-login", methods=["GET", "POST"])
+def client_login():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard"))
+    
+    if request.method == "POST":
+        identifier = request.form["email"].strip()
+        password   = request.form["password"]
+
+        # normalize once for case-insensitive name match
+        ident_lower = identifier.lower()
+
+        # Try exact email match OR case-insensitive name match
+        user = User.query.filter(
+            or_(
+                User.email == ident_lower,
+                func.lower(User.name) == ident_lower
+            )
+        ).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for("dashboard"))
+
+        flash("Invalid credentials", "danger")
+    
+    return render_template("client_login.html")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    # Get the type from query parameter (employee or client)
+    account_type = request.args.get('type', 'client')
+    
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+        name = request.form["name"].strip()
+        password = request.form["password"]
+        role = request.form.get("role", account_type)
+        
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered.", "warning")
+            return redirect(url_for("register", type=account_type))
+        
+        # Create user with the specified role
+        u = User(email=email, name=name, role=role)
+        u.set_password(password)
+        db.session.add(u)
+        db.session.commit()
+        
+        if role == 'employee':
+            flash("Registered as employee! Please login.", "success")
+            return redirect(url_for("index"))
+        else:
+            flash("Registered as client! Please login.", "success")
+            return redirect(url_for("client_login"))
+    
+    return render_template("register.html", account_type=account_type)
+
+from sqlalchemy import or_, func , desc # add this import at the top
 
 @app.route("/logout")
 @login_required
@@ -168,21 +240,42 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    recent_projects = (
-        db.session.query(Project)
-        .join(Activity, Activity.project_id == Project.id)
-        .filter(Activity.user_id == current_user.id)
-        .order_by(desc(Activity.happened_at))
-        .limit(6)
-        .all()
-    )
-
-    events = Event.query.order_by(Event.start.desc()).limit(5).all()
-    stats = {
-        "projects": Project.query.count(),
-        "clients": Client.query.count(),
-        "events": Event.query.count()
-    }
+    if current_user.role == 'employee':
+        # Employees see all data
+        recent_projects = (
+            db.session.query(Project)
+            .join(Activity, Activity.project_id == Project.id)
+            .filter(Activity.user_id == current_user.id)
+            .order_by(desc(Activity.happened_at))
+            .limit(6)
+            .all()
+        )
+        events = Event.query.order_by(Event.start.desc()).limit(5).all()
+        stats = {
+            "projects": Project.query.count(),
+            "clients": Client.query.count(),
+            "events": Event.query.count()
+        }
+    else:
+        # Clients only see their assigned projects and related events
+        assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
+        
+        if assigned_project_ids:
+            recent_projects = Project.query.filter(Project.id.in_(assigned_project_ids)).limit(6).all()
+            events = Event.query.filter(Event.project_id.in_(assigned_project_ids)).order_by(Event.start.desc()).limit(5).all()
+            stats = {
+                "projects": len(assigned_project_ids),
+                "clients": 0,  # Clients don't see client count
+                "events": Event.query.filter(Event.project_id.in_(assigned_project_ids)).count()
+            }
+        else:
+            recent_projects = []
+            events = []
+            stats = {
+                "projects": 0,
+                "clients": 0,
+                "events": 0
+            }
 
     return render_template(
         "dashboard.html",
@@ -199,11 +292,13 @@ def main_menu():
 # ---- Clients CRUD (minimal) ----
 @app.route("/clients")
 @login_required
+@employee_required  #  changes: Only employees can manage clients
 def clients():
     return render_template("clients.html", clients=Client.query.all())
 
 @app.route("/clients/create", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can create clients
 def clients_create():
     name = request.form["name"].strip()
     contact = request.form.get("contact","").strip()
@@ -218,6 +313,7 @@ def clients_create():
     
 @app.route("/clients/<int:id>/update", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can update clients
 def clients_update(id):
     c = Client.query.get_or_404(id)
     c.name = request.form["name"].strip()
@@ -229,6 +325,7 @@ def clients_update(id):
     
 @app.route("/clients/<int:id>/delete", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can delete clients
 def clients_delete(id):
     """Delete a client unless they still have projects."""
     c = Client.query.get_or_404(id)
@@ -246,11 +343,13 @@ def clients_delete(id):
 # ---- Buildings CRUD (minimal) ----
 @app.route("/buildings")
 @login_required
+@employee_required  #  changes: Only employees can manage buildings
 def buildings():
     return render_template("buildings.html", buildings=Building.query.all())
 
 @app.route("/buildings/create", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can create buildings
 def buildings_create():
     name = request.form["name"].strip()
     street = request.form.get("street", "").strip()
@@ -268,6 +367,7 @@ def buildings_create():
 
 @app.route("/buildings/<int:id>/update", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can update buildings
 def buildings_update(id):
     b = Building.query.get_or_404(id)
     b.name = request.form["name"].strip()
@@ -282,6 +382,7 @@ def buildings_update(id):
 
 @app.route("/buildings/<int:id>/delete", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can delete buildings
 def buildings_delete(id):
     b = Building.query.get_or_404(id)
     db.session.delete(b); db.session.commit()
@@ -292,8 +393,19 @@ def buildings_delete(id):
 @app.route("/projects")
 @login_required
 def projects():
+    #  changes: Filter projects based on user role
     q = request.args.get("q", "").strip()
-    query = Project.query.join(Client, isouter=True)
+    
+    if current_user.role == 'employee':
+        # Employees see all projects
+        query = Project.query.join(Client, isouter=True)
+    else:
+        # Clients only see assigned projects
+        assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
+        if not assigned_project_ids:
+            # No projects assigned, show empty list
+            return render_template("projects.html", projects=[], q=q, clients=Client.query.all())
+        query = Project.query.join(Client, isouter=True).filter(Project.id.in_(assigned_project_ids))
 
     if q:
         query = query.filter(
@@ -305,10 +417,13 @@ def projects():
         )
 
     projects = query.order_by(Project.id.desc()).all()
-    return render_template("projects.html", projects=projects, q=q, clients=Client.query.all())
+    #  changes: Pass all users to template for client assignment dropdown
+    all_users = User.query.filter_by(role='client').all() if current_user.role == 'employee' else []
+    return render_template("projects.html", projects=projects, q=q, clients=Client.query.all(), users=all_users)
 
 @app.route("/projects/create", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can create projects
 def projects_create():
     name = request.form["name"].strip()
     client_id = request.form.get("client_id")
@@ -342,6 +457,7 @@ def projects_create():
     
 @app.route("/projects/<int:id>/delete", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can delete projects
 def projects_delete(id):
     """Delete a project unless it still has events."""
     p = Project.query.get_or_404(id)
@@ -360,12 +476,28 @@ def projects_delete(id):
     
 #Events
 @app.route("/events")
-@login_required
+@login_required  #  changes: Allow both employees and clients to view events
 def events():
-    return render_template("events.html", events=Event.query.order_by(Event.start.desc()).all(), projects=Project.query.all())
+    #  changes: Filter events based on user role
+    if current_user.role == 'employee':
+        #  changes: Employees see all events
+        events_list = Event.query.order_by(Event.start.desc()).all()
+        projects_list = Project.query.all()
+    else:
+        #  changes: Clients only see events for their assigned projects
+        assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
+        if assigned_project_ids:
+            events_list = Event.query.filter(Event.project_id.in_(assigned_project_ids)).order_by(Event.start.desc()).all()
+            projects_list = Project.query.filter(Project.id.in_(assigned_project_ids)).all()
+        else:
+            events_list = []
+            projects_list = []
+    
+    return render_template("events.html", events=events_list, projects=projects_list)
 
 @app.route("/events/create", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can create events
 def events_create():
     title = request.form["title"].strip()
     event_type = request.form.get("event_type")
@@ -392,6 +524,7 @@ def events_create():
 
 @app.route("/events/edit/<int:event_id>", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can edit events
 def events_edit(event_id):
     event = Event.query.get_or_404(event_id)
     event.title = request.form["title"].strip()
@@ -407,6 +540,7 @@ def events_edit(event_id):
 
 @app.route("/events/delete/<int:event_id>", methods=["POST"])
 @login_required
+@employee_required  #  changes: Only employees can delete events
 def events_delete(event_id):
     event = Event.query.get_or_404(event_id)
     db.session.delete(event)
@@ -463,5 +597,103 @@ def build_proposal_text(project):
 
 #when ready to use ai, use line below and replace bodies  of two functions above
 #return call_ai_api(prompt)
+
+#  changes: User Management Routes (Employee Only)
+@app.route("/admin/users")
+@login_required
+@employee_required
+def admin_users():
+    """View and manage all users (employees only)"""
+    users = User.query.all()
+    return render_template("admin_users.html", users=users)
+
+@app.route("/admin/users/<int:user_id>/change_role", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can change user roles
+def change_user_role(user_id):
+    """Change a user's role between client and employee"""
+    user = User.query.get_or_404(user_id)
+    new_role = request.form.get("role")
+    
+    if new_role not in ['client', 'employee']:
+        flash("Invalid role specified.", "danger")
+        return redirect(url_for("admin_users"))
+    
+    user.role = new_role
+    db.session.commit()
+    flash(f"User {user.name} role changed to {new_role}.", "success")
+    return redirect(url_for("admin_users"))
+
+@app.route("/admin/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can delete users
+def delete_user(user_id):
+    """Delete a user account"""
+    user = User.query.get_or_404(user_id)
+    
+    #  changes: Prevent deleting yourself
+    if user.id == current_user.id:
+        flash("Cannot delete your own account.", "danger")
+        return redirect(url_for("admin_users"))
+    
+    #  changes: Check if user has project assignments
+    assignment_count = ProjectAssignment.query.filter_by(user_id=user_id).count()
+    if assignment_count > 0:
+        flash(f"Cannot delete: {user.name} is assigned to {assignment_count} project(s). Remove assignments first.", "warning")
+        return redirect(url_for("admin_users"))
+    
+    #  changes: Check if user has activities
+    activity_count = Activity.query.filter_by(user_id=user_id).count()
+    if activity_count > 0:
+        flash(f"Cannot delete: {user.name} has {activity_count} activity record(s) in the system.", "warning")
+        return redirect(url_for("admin_users"))
+    
+    user_name = user.name
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"User {user_name} deleted successfully.", "info")
+    return redirect(url_for("admin_users"))
+
+@app.route("/admin/projects/<int:project_id>/assign", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can assign clients to projects
+def assign_client_to_project(project_id):
+    """Assign a client user to a project"""
+    project = Project.query.get_or_404(project_id)
+    user_id = request.form.get("user_id")
+    
+    if not user_id:
+        flash("Please select a user.", "warning")
+        return redirect(url_for("projects"))
+    
+    user = User.query.get_or_404(int(user_id))
+    
+    #  changes: Check if already assigned
+    existing = ProjectAssignment.query.filter_by(project_id=project_id, user_id=user_id).first()
+    if existing:
+        flash(f"{user.name} is already assigned to this project.", "info")
+        return redirect(url_for("projects"))
+    
+    #  changes: Create assignment
+    assignment = ProjectAssignment(project_id=project_id, user_id=user_id)
+    db.session.add(assignment)
+    db.session.commit()
+    flash(f"{user.name} assigned to {project.name}.", "success")
+    return redirect(url_for("projects"))
+
+@app.route("/admin/projects/<int:project_id>/unassign/<int:user_id>", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can unassign clients from projects
+def unassign_client_from_project(project_id, user_id):
+    """Remove a client user from a project"""
+    assignment = ProjectAssignment.query.filter_by(project_id=project_id, user_id=user_id).first_or_404()
+    user_name = assignment.user.name
+    project_name = assignment.project.name
+    
+    db.session.delete(assignment)
+    db.session.commit()
+    flash(f"{user_name} removed from {project_name}.", "info")
+    return redirect(url_for("projects"))
+
 if __name__ == "__main__":
     app.run(debug=True)

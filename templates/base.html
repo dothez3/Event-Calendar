@@ -48,9 +48,14 @@
     {% if current_user.is_authenticated %}
       <a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
       <a class="nav-link {% if request.endpoint=='projects' %}active{% endif %}" href="{{ url_for('projects') }}">Projects</a>
-      <a class="nav-link {% if request.endpoint=='clients' %}active{% endif %}" href="{{ url_for('clients') }}">Clients</a>
+      <!--  changes: Events visible to both employees and clients -->
       <a class="nav-link {% if request.endpoint=='events' %}active{% endif %}" href="{{ url_for('events') }}">Events</a>
-      <a class="nav-link {% if request.endpoint=='buildings' %}active{% endif %}" href="{{ url_for('buildings') }}">Buildings</a>
+      <!--  changes: Show employee-only menu items -->
+      {% if current_user.role == 'employee' %}
+        <a class="nav-link {% if request.endpoint=='clients' %}active{% endif %}" href="{{ url_for('clients') }}">Clients</a>
+        <a class="nav-link {% if request.endpoint=='buildings' %}active{% endif %}" href="{{ url_for('buildings') }}">Buildings</a>
+        <a class="nav-link {% if request.endpoint=='admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}">User Management</a>
+      {% endif %}
     {% endif %}
   </nav>
 
@@ -58,7 +63,7 @@
     {% if current_user.is_authenticated %}
       <a class="btn btn-sm btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
     {% else %}
-      <a class="btn btn-sm btn-light" href="{{ url_for('login') }}">Login</a>
+      <a class="btn btn-sm btn-light" href="{{ url_for('index') }}">Login</a>
     {% endif %}
   </div>
 </aside>
