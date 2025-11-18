@@ -2,154 +2,239 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Proposal – {{ project.name }}</title>
+    <title>Proposal - {{ project.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            color: #333;
-            line-height: 1.5;
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            color: #333; 
+            line-height: 1.6; 
         }
-        h1 {
-            text-align: center;
-            letter-spacing: 1px;
-        }
-        h3 {
-            margin-top: 1.2rem;
-        }
-        .meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.25rem 1rem;
-            margin-bottom: 1rem;
-        }
-        .label {
+        h1 { 
+            text-align: center; 
+            margin-bottom: 2rem;
+            font-size: 20px;
             font-weight: bold;
         }
-        ul {
-            margin: 0.3rem 0 0 1.25rem;
+        h3 { 
+            font-weight: bold; 
+            margin-top: 1.5rem; 
+            margin-bottom: 0.5rem;
+            text-decoration: underline;
         }
-        hr {
-            border: none;
-            border-top: 1px solid #aaa;
-            margin: 1rem 0;
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            gap: 2rem;
         }
-        .btn {
+        .header-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .label { 
+            font-weight: bold; 
             display: inline-block;
-            margin-bottom: 1rem;
-            padding: 0.4rem 1rem;
-            background: #28a745;
-            color: white;
-            border-radius: 4px;
-            text-decoration: none;
+            min-width: 150px;
         }
+        input[type="text"], textarea { 
+            font-family: inherit; 
+            font-size: 15px; 
+            border: none; 
+            border-bottom: 1px solid #aaa; 
+            outline: none;
+            width: 100%;
+            padding: 2px 0;
+        }
+        textarea { 
+            min-height: 100px; 
+            resize: vertical; 
+            border: 1px solid #aaa;
+            padding: 8px;
+        }
+        .short-input {
+            width: 200px;
+        }
+        ul {
+            margin: 0.5rem 0;
+            padding-left: 2rem;
+        }
+        ul li {
+            margin-bottom: 0.5rem;
+        }
+        .signature-section {
+            margin-top: 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .signature-line {
+            border-bottom: 1px solid #333;
+            margin-top: 2rem;
+            padding-bottom: 2px;
+        }
+        .signature-name {
+            font-family: 'Great Vibes', cursive;
+            font-size: 32px;
+            font-weight: normal;
+            margin: 0;
+        }
+        .btn { 
+            display: inline-block; 
+            margin-top: 2rem; 
+            padding: 0.5rem 1.5rem; 
+            background: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        
         @media print {
-            .btn {
-                display: none;
+            .btn { display: none !important; }
+            input[type="text"], textarea {
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
             }
         }
     </style>
 </head>
-
 <body>
 
-    <!-- Header with logo and company info -->
-    <div style="
-        border-top: 5px solid #ccc;
-        border-bottom: 5px solid #ccc;
-        padding: 10px 0;
-        margin-bottom: 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    ">
-
-        <!-- Left: Logo -->
+    <!-- Header -->
+    <div style="border-top: 5px solid #ccc; border-bottom: 5px solid #ccc; padding: 10px 0; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <img src="{{ url_for('static', filename='images/company_logo.png') }}"
-                 alt="Company Logo"
-                 style="height: 70px; opacity: 0.85; filter: grayscale(100%);">
+            <div style="height: 70px; display: flex; align-items: center; color: #999; font-weight: bold;">Company Logo</div>
         </div>
-
-        <!-- Right: Company Info -->
-        <div style="
-            text-align: right;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 18px;
-            line-height: 1.4;
-        ">
+        <div style="text-align: right; font-size: 18px;">
             <strong style="color: gray;">Craig F. Dothe Architect, LLC</strong><br>
             <span style="color: gray;">ARCHITECTS &amp; PLANNERS</span>
         </div>
     </div>
-    
-    <hr>
 
     <h1>ARCHITECTURAL SERVICES AGREEMENT</h1>
 
-    <!-- PROJECT INFO -->
-    <div class="meta">
-        <div><span class="label">DATE:</span> {{ current_date }}</div>
-        <div><span class="label">PROJECT NUMBER:</span> {{ project_number }}</div>
-
-        <div>
-            <span class="label">TO:</span>
-            {{ project.client.name if project.client else 'N/A' }}<br>
-            {{ project.client.address if project.client else '' }}
+    <!-- Basic Info -->
+    <div class="header-row">
+        <div class="header-col">
+            <div style="margin-bottom: 0.5rem;">
+                <span class="label">DATE:</span>
+                <input type="text" class="short-input" value="{{ current_date }}">
+            </div>
+            <div>
+                <span class="label">PROJECT NUMBER:</span>
+                <input type="text" class="short-input" value="{{ project_number }}">
+            </div>
         </div>
-
-        <div><span class="label">PROJECT:</span> {{ project.name }}</div>
-
-        <div><span class="label">PHONE NUMBER:</span> {{ project.client.phone if project.client else 'N/A' }}</div>
-        <div><span class="label">E MAIL:</span> {{ project.client.contact if project.client else 'N/A' }}</div>
     </div>
 
-    <!-- BODY SECTIONS -->
+    <div class="header-row">
+        <div class="header-col">
+            <div><span class="label">TO:</span></div>
+            <input type="text" value="{{ project.client.name if project.client else '' }}" style="margin-bottom: 0.3rem;">
+            {% if project.building %}
+            <input type="text" value="{{ project.building.street }}">
+            <input type="text" value="{{ project.building.city }}, {{ project.building.state }} {{ project.building.zip }}">
+            {% else %}
+            <input type="text" placeholder="Address Line 1">
+            <input type="text" placeholder="City, State ZIP">
+            {% endif %}
+        </div>
+        <div class="header-col">
+            <div><span class="label">PROJECT:</span></div>
+            <input type="text" value="{{ project.name }}">
+        </div>
+    </div>
+
+    <div class="header-row">
+        <div class="header-col">
+            <span class="label">PHONE NUMBER:</span>
+            <input type="text" class="short-input" value="{{ project.client.phone if project.client else '' }}">
+        </div>
+        <div class="header-col">
+            <span class="label">E MAIL:</span>
+            <input type="text" value="{{ project.client.contact if project.client else '' }}">
+        </div>
+    </div>
+
+    <!-- PROJECT DESCRIPTION -->
     <h3>PROJECT DESCRIPTION:</h3>
-    <p>{{ proposal_text }}</p>
+    <textarea>{{ project.description or 'Enter project description here...' }}</textarea>
 
+    <!-- SCOPE OF SERVICES -->
     <h3>SCOPE OF SERVICES:</h3>
-    <ul>
-        <li>Prepare Certification as required by the Fire Prevention Bureau</li>
-        <li>Prepare report of items needing correction prior to certification</li>
-    </ul>
+    <textarea style="min-height: 80px;">At the conclusion of the onsite inspection I shall depending on the condition prepare one of the following:
 
+- Prepare Certification in a format consistent with the requirements of the Fire Prevention Bureau.
+- Prepare a report listing all of the items which must be corrected before a certification can take place.</textarea>
+
+    <!-- ADDITIONAL SERVICES NOT INCLUDED -->
     <h3>ADDITIONAL SERVICES NOT INCLUDED:</h3>
     <ul>
-        <li>Significant scope changes beyond initial agreement</li>
-        <li>Architectural drawings for replacement of the fire escape system</li>
+        <li>Significant change to scope of project as described above.</li>
+        <li>Work not specifically stated above.</li>
+        <li>Architectural drawings for the repair or replacement of the fire escape system.</li>
+        <li>Re-inspection after work if required.</li>
     </ul>
 
+    <!-- GENERAL CONDITIONS -->
     <h3>GENERAL CONDITIONS:</h3>
     <ul>
-        <li>Additional certification billed per stair if required</li>
-        <li>Client provides access and documentation for egress verification</li>
+        <li>Additional certification (if required) upon completion of repairs and replacement referenced above (if required by Fire Prevention). Fee for recertification shall be $1,000.00 each stair requiring recertification.</li>
+        <li>Client shall provide a survey of each of the buildings so we can show egress to public access.</li>
+        <li>Coordination of, preparation of addition documentation, or support of any possible legal investigation or hearings that may arise from the legal phase of project regarding path of means of egress to the public right of way for the secondary means of egress.</li>
+        <li>Additional services shall be invoiced on a time and material basis. The Architect's standard hourly rate is $200.00/hour, and the drafting rate is $125.00/hr.</li>
+        <li>Reimbursable expenses, such as printing shall be billed at $6.00 each black-line sheet, postage and shipping shall be billed at cost plus 25%.</li>
+        <li>Maximum exposure to liability shall be consistent with the base agreement as herein defined. In no event shall Craig Dothe Architect L.L.C. be liable to the Client for any indirect, incidental, special or consequential damages whatsoever (including but not limited to lost profits or interruption of business) arising out of or related to the services provided under the agreement.</li>
+        <li>Standard of care - Craig Dothe Architect L.L.C. and its subsidiaries, independent professional associates, sub-consultants, and subcontractors will exercise that degree of care and skill ordinarily practiced under similar circumstances by architects and engineers providing similar services. The Client agrees that services provided by Craig Dothe Architect L.L.C. will be rendered without any warranty, express or implied.</li>
+        <li>Craig Dothe Architect L.L.C. Reliance: Unless otherwise specifically indicated in writing, Craig Dothe Architect L.L.C. shall be entitled to rely, without liability, on the accuracy and completeness of information provided by the Client, the Client's consultants and contractors, and information from public records, without the need for independent verification.</li>
+        <li>Invoices shall be paid at the time of invoicing. Payment shall be received prior to the next phase and at the time of delivery of drawings. At his discretion, the Architect reserves the right to stop work at the time a payment is delinquent.</li>
+        <li>Delinquent payments shall bear an interest rate of 18% per annum. Any and all attorney and court fees for repayment of delinquent fees shall be borne upon the Client.</li>
+        <li>Payment of any invoice by the Client, to the architect, shall be taken to mean that the Client is satisfied with the services provided and is not aware of any deficiency in those services.</li>
     </ul>
 
+    <p><strong>Note:</strong> Printing not included and shall be billed according to fee schedule below.</p>
+
+    <!-- FEE BASIS -->
     <h3>FEE BASIS:</h3>
+    <p>For Architectural services outlined above, the fee shall be: <strong>$<input type="text" style="width: 120px; display: inline-block;" placeholder="0.00"></strong></p>
+    
+    <p style="margin-top: 1rem;">Payment shall be made as follows:</p>
     <ul>
-        <li>Retainer — $1,250.00</li>
-        <li>Delivery of Certification and/or Report — $1,250.00</li>
+        <li>Retainer = $<input type="text" style="width: 120px; display: inline-block;" placeholder="0.00"></li>
+        <li>Delivery of Certification and/or report = $<input type="text" style="width: 120px; display: inline-block;" placeholder="0.00"></li>
     </ul>
 
+    <!-- ACCEPTANCE -->
     <h3>ACCEPTANCE:</h3>
-    <p>
-        Signatures below represent approval by both parties. Work shall begin upon signing of this agreement.<br>
-        Please return one signed original. Thank you.
-    </p>
+    <p>Signatures below represent approval by both parties. Work shall begin at signing of this agreement. Please return one signed original. Thank You.</p>
 
-    <div style="margin-top: 40px;">
-        <div><strong>Craig Dothe</strong></div>
-        <div>Craig Dothe RA/PP</div>
-
-        <br><br>
-
-        <div style="display: flex; justify-content: space-between;">
-            <div>Date: ____________</div>
-            <div>Client Signature: ____________</div>
+    <div class="signature-section">
+        <div>
+            <p class="signature-name">Craig Dothe</p>
+            <div class="signature-line"></div>
+            <p style="margin-top: 0.5rem;">Craig Dothe RA/PP</p>
+            <div style="margin-top: 2rem;">
+                <div class="signature-line" style="width: 200px;"></div>
+                <p style="margin-top: 0.5rem;">Date</p>
+            </div>
+        </div>
+        <div>
+            <div class="signature-line"></div>
+            <p style="margin-top: 0.5rem;">Client</p>
+            <div style="margin-top: 2rem;">
+                <div class="signature-line" style="width: 200px;"></div>
+                <p style="margin-top: 0.5rem;">Date</p>
+            </div>
         </div>
     </div>
 
-    <a href="#" onclick="window.print()" class="btn">Print / Save as PDF</a>
+    <button onclick="window.print()" class="btn">Print / Save as PDF</button>
+
 </body>
 </html>

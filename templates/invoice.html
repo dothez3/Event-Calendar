@@ -4,134 +4,412 @@
     <meta charset="utf-8">
     <title>Invoice - {{ project.name }}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.5; }
-        h1 { text-align: center; margin-bottom: 2rem; }
+        body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+        h1 { text-align: center; margin-bottom: 2rem; font-size: 28px; }
         .section { margin-bottom: 1.5rem; }
         .label { font-weight: bold; }
-        .btn { display: inline-block; margin-top: 1rem; padding: 0.4rem 1rem; background:#007bff; color:white; text-decoration:none; border-radius:4px;}
+        .btn { display: inline-block; margin-top: 1rem; padding: 0.4rem 1rem; background:#007bff; color:white; text-decoration:none; border-radius:4px; cursor: pointer; border: none; }
         .row { display: flex; justify-content: space-between; margin-bottom: 1rem; }
-        .col-left { text-align: left; }
-        .col-right { text-align: right; }
-        .invoice-body { margin-top: 2rem; white-space: pre-line; }
+        .col-left { text-align: left; flex: 1; }
+        .col-right { text-align: right; flex: 1; word-wrap: break-word; overflow-wrap: break-word; }
+        .header-row { display: flex; justify-content: space-between; margin-bottom: 1rem; gap: 2rem; }
+        .header-col { flex: 1; display: flex; flex-direction: column; }
+        .short-input { width: 200px; }
+        input, textarea { font-family: inherit; font-size: 15px; outline: none; border: none; border-bottom: 1px solid #aaa; }
+        textarea { width: 100%; min-height: 60px; resize: vertical; }
+        
+        /* Remove spinner arrows from rate and amount inputs only */
+        .rate::-webkit-inner-spin-button,
+        .rate::-webkit-outer-spin-button,
+        .amount::-webkit-inner-spin-button,
+        .amount::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-        /* Fee table styling */
+        .rate, .amount {
+            appearance: textfield;
+            -moz-appearance: textfield;  /* Firefox fallback */
+        }
         .fee-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .fee-table th, .fee-table td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
-        .fee-table th { background-color: #f5f5f5; text-align: left; }
-        .fee-table td.right { text-align: right; font-family: monospace; }
-        .fee-table tfoot td { font-weight: bold; border-top: 2px solid #333; }
-        .fee-section { margin-top: 40px; }
-        @media print { .btn { display:none; } }
+        .fee-table th { background-color: #f5f5f5; text-align: left; font-size: 14px; }
+        .fee-table td input[type="number"] { text-align: left; padding-left: 2px; }
+        .fee-table .qty { width: 50px; }
+        .fee-table .rate { width: 70px; }
+        .fee-table .amount { width: 80px; }
+        .fee-table td input[readonly] { background: #f9f9f9; }
+        #addItem { margin-top: 10px; }
+
+        /* Print styles - MUCH LARGER FOR BETTER PDF */
+        @media print {
+            @page {
+                size: letter;
+                margin: 0.5in 0.75in;
+            }
+            
+            body { 
+                margin: 0;
+                padding: 0;
+                font-size: 14pt !important;
+                line-height: 1.6;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            h1 {
+                font-size: 32pt !important;
+                margin-bottom: 30pt !important;
+                margin-top: 10pt !important;
+            }
+            
+            h4 {
+                font-size: 16pt !important;
+                margin-top: 25pt !important;
+                margin-bottom: 12pt !important;
+                font-weight: bold;
+            }
+            
+            /* Hide all interactive elements */
+            .btn, #addItem, .delete-btn, button { 
+                display: none !important; 
+            }
+            
+            /* Hide the Action column header and cells */
+            .fee-table th:last-child,
+            .fee-table td:last-child {
+                display: none !important;
+            }
+
+            /* BIGGER table styling for print */
+            .fee-table {
+                width: 100%;
+                margin-top: 20pt !important;
+                font-size: 13pt !important;
+                border-collapse: collapse;
+            }
+            
+            .fee-table th {
+                background-color: #f5f5f5 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                padding: 12pt 10pt !important;
+                font-weight: bold;
+                font-size: 13pt !important;
+                border-bottom: 2pt solid #ddd !important;
+            }
+            
+            .fee-table td {
+                padding: 12pt 10pt !important;
+                font-size: 13pt !important;
+                border-bottom: 1pt solid #ddd !important;
+            }
+
+            /* Center alignment for numeric columns */
+            .fee-table th:nth-child(2),
+            .fee-table th:nth-child(3),
+            .fee-table th:nth-child(4) {
+                text-align: center;
+            }
+            
+            .fee-table td:nth-child(2),
+            .fee-table td:nth-child(3),
+            .fee-table td:nth-child(4) {
+                text-align: center;
+                white-space: nowrap;
+            }
+            
+            /* Make inputs display inline and BIGGER */
+            .fee-table td input {
+                display: inline !important;
+                width: auto !important;
+                text-align: center !important;
+                font-size: 13pt !important;
+            }
+            
+            .fee-table td span {
+                display: inline !important;
+                font-size: 13pt !important;
+            }
+
+            /* Remove spinner buttons from number inputs */
+            input[type="number"]::-webkit-inner-spin-button,
+            input[type="number"]::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            input[type="number"] {
+                -moz-appearance: textfield;
+                appearance: textfield;
+            }
+
+            /* Make inputs look like plain text but BIGGER */
+            input[type="text"], 
+            input[type="number"],
+            textarea {
+                border: none !important; 
+                outline: none !important; 
+                box-shadow: none !important;
+                background: transparent !important;
+                font-size: 14pt !important;
+                line-height: 1.6 !important;
+            }
+            
+            /* BIGGER spacing improvements */
+            .header-row {
+                margin-bottom: 18pt !important;
+            }
+            
+            .label {
+                font-weight: bold;
+                font-size: 13pt !important;
+            }
+            
+            /* Total due styling - MUCH BIGGER */
+            p {
+                font-size: 14pt !important;
+                margin-top: 30pt !important;
+            }
+            
+            #totalDue {
+                font-size: 18pt !important;
+                font-weight: bold;
+            }
+            
+            /* Prevent page breaks in important sections */
+            .fee-section, .fee-table { 
+                page-break-inside: avoid; 
+            }
+            
+            /* Better header spacing - BIGGER */
+            .header-section {
+                border-top: 4pt solid #ccc !important;
+                border-bottom: 4pt solid #ccc !important;
+                padding: 15pt 0 !important;
+                margin-bottom: 35pt !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .header-section > div:first-child > div {
+                height: 80pt !important;
+                font-size: 16pt !important;
+            }
+            
+            .header-section > div:last-child {
+                font-size: 20pt !important;
+            }
+            
+            .header-section > div:last-child strong {
+                font-size: 20pt !important;
+            }
+            
+            .header-section > div:last-child span {
+                font-size: 16pt !important;
+            }
+            
+            hr {
+                border: 0;
+                border-top: 2pt solid #ccc !important;
+                margin: 20pt 0 !important;
+            }
+            
+            /* Better details section */
+            .invoice-body {
+                margin-bottom: 20pt !important;
+            }
+            
+            .invoice-body label {
+                font-size: 14pt !important;
+                margin-bottom: 8pt !important;
+                display: block;
+            }
+            
+            .invoice-body textarea {
+                font-size: 13pt !important;
+                line-height: 1.6 !important;
+            }
+            
+            /* Remove any default margins that might cause layout issues */
+            h1, h4 { 
+                page-break-after: avoid; 
+            }
+        }
     </style>
 </head>
 <body>
-    
 
-<!-- Header with logo and company info -->
-<div style="
-    border-top: 5px solid #ccc;
-    border-bottom: 5px solid #ccc;
-    padding: 10px 0;
-    margin-bottom: 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-">
-
-    <!-- Left: Logo -->
-    <div>
-        <img src="{{ url_for('static', filename='images/company_logo.png') }}"
-             alt="Company Logo"
-             style="height: 70px; opacity: 0.85; filter: grayscale(100%);">
+    <!-- Header -->
+    <div class="header-section" style="border-top: 5px solid #ccc; border-bottom: 5px solid #ccc; padding: 10px 0; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div style="height: 70px; display: flex; align-items: center; color: #999; font-weight: bold;">Company Logo</div>
+        </div>
+        <div style="text-align: right; font-size: 18px;">
+            <strong style="color: gray;">Craig F. Dothe Architect, LLC</strong><br>
+            <span style="color: gray;">ARCHITECTS &amp; PLANNERS</span>
+        </div>
     </div>
-
-    <!-- Right: Company Info -->
-    <div style="
-        text-align: right;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 18px;
-        line-height: 1.4;
-    ">
-        <strong style="color: gray;">Craig F. Dothe Architect, LLC</strong><br>
-        <span style="color: gray;">ARCHITECTS &amp; PLANNERS</span>
-    </div>
-
-</div>
-
-
-
 
     <h1>Invoice</h1>
 
-    <!-- Top row: Date and Project Number -->
-    <div class="row">
-        <div class="col-left">
-            <div><span class="label">Date:</span> {{ current_date }}</div>
-            <div><span class="label">Project #:</span> {{ project_number }}</div>
-        </div>
-        <div class="col-right">
-            <div><span class="label">Project:</span> {{ project.name }}</div>
-        </div>
-    </div>
-
-    <!-- To / Building Info Section -->
-    <div class="section">
-        <div class="col-left">
-            <div><span class="label">To:</span></div>
-            <div>3424 Winchester Avenue</div>
-            <div>Atlantic City, NJ 08401</div>
+    <!-- Basic Info -->
+    <div class="header-row">
+        <div class="header-col">
+            <div style="margin-bottom: 0.5rem;">
+                <span class="label">DATE:</span>
+                <input type="text" class="short-input" value="{{ current_date }}">
+            </div>
+            <div>
+                <span class="label">PROJECT NUMBER:</span>
+                <input type="text" class="short-input" value="{{ project_number }}">
+            </div>
         </div>
     </div>
 
-    <!-- Client Contact Info -->
-    <div class="row section">
-        <div class="col-left">
-            <div><span class="label">Phone:</span> {{ project.client.phone if project.client else 'N/A' }}</div>
+    <div class="header-row">
+        <div class="header-col">
+            <div><span class="label">TO:</span></div>
+            <input type="text" value="{{ project.client.name if project.client else '' }}" style="margin-bottom: 0.3rem;">
+            {% if project.building %}
+            <input type="text" value="{{ project.building.street }}">
+            <input type="text" value="{{ project.building.city }}, {{ project.building.state }} {{ project.building.zip }}">
+            {% else %}
+            <input type="text" placeholder="Address Line 1">
+            <input type="text" placeholder="City, State ZIP">
+            {% endif %}
         </div>
-        <div class="col-right">
-            <div><span class="label">Email:</span> {{ project.client.contact if project.client else 'N/A' }}</div>
+        <div class="header-col">
+            <div><span class="label">PROJECT:</span></div>
+            <input type="text" value="{{ project.name }}">
+        </div>
+    </div>
+
+    <div class="header-row">
+        <div class="header-col">
+            <span class="label">PHONE NUMBER:</span>
+            <input type="text" class="short-input" value="{{ project.client.phone if project.client else '' }}">
+        </div>
+        <div class="header-col">
+            <span class="label">E MAIL:</span>
+            <input type="text" value="{{ project.client.contact if project.client else '' }}">
         </div>
     </div>
 
     <hr>
 
-    <!-- Invoice Body -->
+    <!-- Details -->
     <div class="invoice-body">
-        <p>{{ invoice_text }}</p>
+        <label class="label">Details:</label>
+        <textarea>{{ project.description or 'Enter details here...' }}</textarea>
     </div>
 
-    <!-- Fee Breakdown Section -->
+    <!-- Fee Breakdown -->
     <div class="fee-section">
         <h4>FEE BREAKDOWN</h4>
         <table class="fee-table">
             <thead>
                 <tr>
                     <th>Description</th>
-                    <th class="right">Qty</th>
-                    <th class="right">Rate</th>
-                    <th class="right">Amount</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>Action</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="feeBody">
                 <tr>
-                    <td>Fire escape inspection</td>
-                    <td class="left">1</td>
-                    <td class="left">$1,000.00</td>
-                    <td class="left">$1,000.00</td>
+                    <td><input type="text" value="Item 1"></td>
+                    <td><input type="number" value="1" class="qty"></td>
+                    <td><span>$</span><input type="number" value="0.00" class="rate" step="0.01"></td>
+                    <td><span>$</span><input type="number" value="0.00" class="amount" readonly step="0.01"></td>
+                    <td><button class="delete-btn">Delete</button></td>
                 </tr>
             </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3">TOTAL DUE</td>
-                    <td>$1,000.00</td>
-                </tr>
-            </tfoot>
         </table>
-        <p style="margin-top:25px; font-weight:bold;">
-            Please pay the total due above.
-        </p>
+        <button id="addItem">+ Add Item</button>
+        <p style="margin-top:25px; font-weight:bold; font-size: 16px;">Total Due: $<span id="totalDue">0.00</span></p>
     </div>
-    <!--  Print/save as PDF-->
-    <a href="#" onclick="window.print()" class="btn">Print / Save as PDF</a>
+
+    <button onclick="window.print()" class="btn">Print / Save as PDF</button>
+    <button onclick="exportToWord()" class="btn" style="margin-left: 10px;">Save as Word Doc</button>
+
+    <script>
+        function recalc() {
+            let total = 0;
+            document.querySelectorAll('#feeBody tr').forEach(row => {
+                const qty = parseFloat(row.querySelector('.qty').value) || 0;
+                const rate = parseFloat(row.querySelector('.rate').value) || 0;
+                const amountInput = row.querySelector('.amount');
+                const amount = qty * rate;
+                amountInput.value = amount.toFixed(2);
+                total += amount;
+            });
+            document.getElementById('totalDue').textContent = total.toFixed(2);
+        }
+
+        // Update amounts whenever qty or rate changes
+        document.querySelector('#feeBody').addEventListener('input', recalc);
+
+        // Add new row
+        document.getElementById('addItem').addEventListener('click', () => {
+            const tbody = document.getElementById('feeBody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="New Item"></td>
+                <td><input type="number" value="0" class="qty"></td>
+                <td><span>$</span><input type="number" value="0" class="rate"></td>
+                <td><span>$</span><input type="number" value="0" class="amount" readonly></td>
+                <td><button class="delete-btn">Delete</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Delete row
+        document.querySelector('#feeBody').addEventListener('click', e => {
+            if (e.target.classList.contains('delete-btn')) {
+                e.target.closest('tr').remove();
+                recalc();
+            }
+        });
+
+        // Initial calculation
+        recalc();
+
+        // Export to Word function
+        function exportToWord() {
+            // Clone the document content
+            const content = document.body.cloneNode(true);
+            
+            // Remove buttons from the clone
+            content.querySelectorAll('.btn, #addItem, .delete-btn, button').forEach(el => el.remove());
+            content.querySelectorAll('.fee-table th:last-child, .fee-table td:last-child').forEach(el => el.remove());
+            
+            // Convert inputs to plain text
+            content.querySelectorAll('input, textarea').forEach(input => {
+                const span = document.createElement('span');
+                span.textContent = input.value;
+                input.parentNode.replaceChild(span, input);
+            });
+            
+            // Create HTML for Word
+            const html = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/1999/xhtml'>
+                <head><meta charset='utf-8'><title>Invoice</title></head>
+                <body>${content.innerHTML}</body>
+                </html>
+            `;
+            
+            // Create blob and download
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'invoice.doc';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+
 </body>
 </html>

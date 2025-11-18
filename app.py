@@ -44,7 +44,12 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     contact = db.Column(db.String(120))
-    phone = db.Column(db.String(50)) 
+    phone = db.Column(db.String(50))
+    # Address fields - added for better client information management
+    street = db.Column(db.String(120))
+    city = db.Column(db.String(80))
+    state = db.Column(db.String(20))
+    zip = db.Column(db.String(20))
     
 class Building(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -59,10 +64,12 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey("client.id"))
+    building_id = db.Column(db.Integer, db.ForeignKey("building.id"))  # NEW
     description = db.Column(db.Text)
     status = db.Column(db.String(50), default="Planned")
     due_date = db.Column(db.Date)
     client = db.relationship("Client", backref="projects")
+    building = db.relationship("Building", backref="projects")  # NEW
 
 #  changes: New model to track which client users are assigned to which projects
 class ProjectAssignment(db.Model):
@@ -127,19 +134,68 @@ class Activity(db.Model):
 def init_db():
     db.drop_all()
     db.create_all()
-    # Seed demo data
+    
+    # Seed demo user
     if not User.query.filter_by(email="demo@pms.local").first():
         u = User(email="demo@pms.local", name="Demo User", role="employee")  #  changes: Set demo user as employee
         u.set_password("demo123")
         db.session.add(u)
-    c = Client(name="Bruce Wayne", contact="bwayne.enterprises@gmail.com", phone="555-01234")
-    db.session.add(c)
-    p = Project(name="Wayne Residential Complex", client=c, description="Refresh UI", status="In Progress", due_date=datetime(2025,12,23).date())
-    db.session.add(p)
-    e = Event(title="Pre-Construction Planning", project=p, start=datetime.now())
-    db.session.add(e)
+    
+    # Add multiple clients with addresses (their home/office addresses - where they receive mail)
+    c1 = Client(
+        name="Bruce Wayne", 
+        contact="bwayne.enterprises@gmail.com", 
+        phone="555-01234",
+        street="Wayne Enterprises, 1 Wayne Tower",  # His corporate office
+        city="Gotham",
+        state="NJ",
+        zip="08402"
+    )
+    c2 = Client(
+        name="Tony Stark", 
+        contact="tstark@starkindustries.com", 
+        phone="555-99999",
+        street="10880 Malibu Point",  # His Malibu house (different from project site)
+        city="Malibu",
+        state="CA",
+        zip="90265"
+    )
+    c3 = Client(
+        name="Peter Parker", 
+        contact="pparker@dailybugle.com", 
+        phone="555-77777",
+        street="178 Bleecker Street",  # His apartment (different from project site)
+        city="New York",
+        state="NY",
+        zip="10012"
+    )
+    db.session.add_all([c1, c2, c3])
+    
+    # Add multiple buildings
+    b1 = Building(name="Wayne Manor", street="1007 Mountain Drive", city="Gotham", state="NJ", zip="08401")
+    b2 = Building(name="Stark Tower", street="200 Park Avenue", city="New York", state="NY", zip="10166")
+    b3 = Building(name="Parker Residence", street="20 Ingram Street", city="Queens", state="NY", zip="11375")
+    db.session.add_all([b1, b2, b3])
+    
+    # Commit buildings first so they have IDs
+    db.session.commit()
+    
+    # Add multiple projects (NOW with building links)
+    p1 = Project(name="Wayne Residential Complex", client=c1, building=b1, description="Luxury residential development", status="In Progress", due_date=datetime(2025,12,23).date())
+    p2 = Project(name="Stark Industries HQ Renovation", client=c2, building=b2, description="Modern office renovation", status="Planned", due_date=datetime(2026,3,15).date())
+    p3 = Project(name="Parker Family Home Remodel", client=c3, building=b3, description="Small home renovation project", status="In Progress", due_date=datetime(2025,11,30).date())
+    db.session.add_all([p1, p2, p3])
+    
+    # Add multiple events
+    e1 = Event(title="Pre-Construction Planning", event_type="Client Meeting", project=p1, start=datetime(2025,11,13,12,31))
+    e2 = Event(title="Site Inspection", event_type="Site Inspection", project=p1, start=datetime(2025,11,20,9,0), end=datetime(2025,11,20,11,0))
+    e3 = Event(title="Blueprint Review", event_type="Design Review", project=p2, start=datetime(2025,11,25,14,0))
+    db.session.add_all([e1, e2, e3])
+    
     db.session.commit()
     print("Initialized the database. Login with demo@pms.local / demo123")
+
+from sqlalchemy import or_, func, desc  # add this import at the top
 
 #Routes
 @app.route("/", methods=["GET", "POST"])
@@ -228,8 +284,6 @@ def register():
     
     return render_template("register.html", account_type=account_type)
 
-from sqlalchemy import or_, func , desc # add this import at the top
-
 @app.route("/logout")
 @login_required
 def logout():
@@ -289,12 +343,47 @@ def dashboard():
 def main_menu():
         return render_template("main_menu.html")
 
-# ---- Clients CRUD (minimal) ----
+# ---- Clients CRUD ----
 @app.route("/clients")
 @login_required
 @employee_required  #  changes: Only employees can manage clients
 def clients():
-    return render_template("clients.html", clients=Client.query.all())
+    # Get search query and sort option from URL parameters
+    search_query = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort", "name")  # Default sort by name
+    
+    # Start with base query
+    query = Client.query
+    
+    # Apply search filter if provided
+    if search_query:
+        query = query.filter(
+            or_(
+                Client.name.ilike(f"%{search_query}%"),
+                Client.contact.ilike(f"%{search_query}%"),
+                Client.phone.ilike(f"%{search_query}%"),
+                Client.street.ilike(f"%{search_query}%"),
+                Client.city.ilike(f"%{search_query}%"),
+                Client.state.ilike(f"%{search_query}%"),
+                Client.zip.ilike(f"%{search_query}%")
+            )
+        )
+    
+    # Apply sorting
+    if sort_by == "name":
+        query = query.order_by(Client.name)
+    elif sort_by == "city":
+        query = query.order_by(Client.city)
+    elif sort_by == "state":
+        query = query.order_by(Client.state)
+    
+    clients_list = query.all()
+    
+    # Count projects for each client
+    for client in clients_list:
+        client.project_count = Project.query.filter_by(client_id=client.id).count()
+    
+    return render_template("clients.html", clients=clients_list, search_query=search_query, sort_by=sort_by)
 
 @app.route("/clients/create", methods=["POST"])
 @login_required
@@ -303,10 +392,25 @@ def clients_create():
     name = request.form["name"].strip()
     contact = request.form.get("contact","").strip()
     phone = request.form.get("phone","").strip()
+    # Get address fields from form
+    street = request.form.get("street","").strip()
+    city = request.form.get("city","").strip()
+    state = request.form.get("state","").strip()
+    zip_code = request.form.get("zip","").strip()
+    
     if not name:
         flash("Client name required", "warning")
     else:
-        db.session.add(Client(name=name, contact=contact, phone=phone))
+        # Create client with all fields including address
+        db.session.add(Client(
+            name=name, 
+            contact=contact, 
+            phone=phone,
+            street=street,
+            city=city,
+            state=state,
+            zip=zip_code
+        ))
         db.session.commit()
         flash("Client added", "success")
     return redirect(url_for("clients"))
@@ -319,6 +423,11 @@ def clients_update(id):
     c.name = request.form["name"].strip()
     c.contact = request.form.get("contact", "").strip()
     c.phone = request.form.get("phone", "").strip()
+    # Update address fields
+    c.street = request.form.get("street", "").strip()
+    c.city = request.form.get("city", "").strip()
+    c.state = request.form.get("state", "").strip()
+    c.zip = request.form.get("zip", "").strip()
     db.session.commit()
     flash("Client updated successfully.", "success")
     return redirect(url_for("clients"))
@@ -339,6 +448,39 @@ def clients_delete(id):
     db.session.commit()
     flash("Client deleted successfully.", "info")
     return redirect(url_for("clients"))
+
+@app.route("/clients/<int:id>")
+@login_required
+@employee_required  #  changes: Only employees can view client details
+def client_detail(id):
+    """View detailed information about a specific client"""
+    client = Client.query.get_or_404(id)
+    
+    # Get all projects for this client
+    projects = Project.query.filter_by(client_id=id).all()
+    
+    # Get all events related to this client's projects
+    project_ids = [p.id for p in projects]
+    events = Event.query.filter(Event.project_id.in_(project_ids)).order_by(Event.start.desc()).all() if project_ids else []
+    
+    # Calculate stats
+    total_projects = len(projects)
+    active_projects = len([p for p in projects if p.status == "In Progress"])
+    completed_projects = len([p for p in projects if p.status == "Done"])
+    upcoming_events = len([e for e in events if e.start > datetime.now()])
+    
+    stats = {
+        'total_projects': total_projects,
+        'active_projects': active_projects,
+        'completed_projects': completed_projects,
+        'upcoming_events': upcoming_events
+    }
+    
+    return render_template("client_detail.html", 
+                         client=client, 
+                         projects=projects, 
+                         events=events,
+                         stats=stats)
     
 # ---- Buildings CRUD (minimal) ----
 @app.route("/buildings")
@@ -404,7 +546,7 @@ def projects():
         assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
         if not assigned_project_ids:
             # No projects assigned, show empty list
-            return render_template("projects.html", projects=[], q=q, clients=Client.query.all())
+            return render_template("projects.html", projects=[], q=q, clients=Client.query.all(), buildings=Building.query.all(), users=[])
         query = Project.query.join(Client, isouter=True).filter(Project.id.in_(assigned_project_ids))
 
     if q:
@@ -417,9 +559,10 @@ def projects():
         )
 
     projects = query.order_by(Project.id.desc()).all()
-    #  changes: Pass all users to template for client assignment dropdown
+    # MERGED: Pass all users to template for client assignment dropdown (your feature)
+    # AND pass buildings for building associations (teammate's feature)
     all_users = User.query.filter_by(role='client').all() if current_user.role == 'employee' else []
-    return render_template("projects.html", projects=projects, q=q, clients=Client.query.all(), users=all_users)
+    return render_template("projects.html", projects=projects, q=q, clients=Client.query.all(), buildings=Building.query.all(), users=all_users)
 
 @app.route("/projects/create", methods=["POST"])
 @login_required
@@ -427,6 +570,7 @@ def projects():
 def projects_create():
     name = request.form["name"].strip()
     client_id = request.form.get("client_id")
+    building_id = request.form.get("building_id")  # NEW
     description = request.form.get("description", "").strip()
     due_date = request.form.get("due_date", "").strip()
     status = request.form.get("status", "Planned").strip()
@@ -439,6 +583,7 @@ def projects_create():
     p = Project(
         name=name,
         client_id=int(client_id) if client_id else None,
+        building_id=int(building_id) if building_id else None,  # NEW
         description=description,
         status=status,
         due_date=datetime.fromisoformat(due_date).date() if due_date else None,
@@ -473,6 +618,85 @@ def projects_delete(id):
     db.session.commit()
     flash("Project deleted successfully.", "info")
     return redirect(url_for("projects"))
+
+@app.route("/projects/<int:id>/update", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can update projects
+def projects_update(id):
+    """Update project information"""
+    p = Project.query.get_or_404(id)
+    
+    p.name = request.form.get("name", "").strip()
+    p.status = request.form.get("status", "Planned")
+    p.description = request.form.get("description", "").strip() or None
+    
+    # Handle due date
+    due_str = request.form.get("due_date", "").strip()
+    if due_str:
+        p.due_date = datetime.strptime(due_str, "%Y-%m-%d").date()
+    else:
+        p.due_date = None
+    
+    # Handle client
+    client_id = request.form.get("client_id", "").strip()
+    p.client_id = int(client_id) if client_id else None
+    
+    # Handle building
+    building_id = request.form.get("building_id", "").strip()
+    p.building_id = int(building_id) if building_id else None
+    
+    db.session.commit()
+    flash("Project updated successfully!", "success")
+    return redirect(url_for("project_detail", id=id))
+
+@app.route("/projects/<int:id>")
+@login_required
+def project_detail(id):
+    """View detailed information about a specific project"""
+    project = Project.query.get_or_404(id)
+    
+    # Check permissions - employees see all, clients only see assigned projects
+    if current_user.role == 'client':
+        # Check if this client user is assigned to this project
+        assignment = ProjectAssignment.query.filter_by(project_id=id, user_id=current_user.id).first()
+        if not assignment:
+            flash("Access denied. You are not assigned to this project.", "danger")
+            return redirect(url_for("dashboard"))
+    
+    # Get all events for this project
+    events = Event.query.filter_by(project_id=id).order_by(Event.start.desc()).all()
+    
+    # Get assigned users (client users)
+    assigned_users = [assignment.user for assignment in project.assignments]
+    
+    # Get all clients and buildings for edit form (employees only)
+    clients = Client.query.order_by(Client.name).all() if current_user.role == 'employee' else []
+    buildings = Building.query.order_by(Building.name).all() if current_user.role == 'employee' else []
+    
+    # Calculate stats
+    total_events = len(events)
+    upcoming_events = len([e for e in events if e.start > datetime.now()])
+    
+    # Days until due date
+    days_until_due = None
+    if project.due_date:
+        delta = project.due_date - datetime.now().date()
+        days_until_due = delta.days
+    
+    stats = {
+        'total_events': total_events,
+        'upcoming_events': upcoming_events,
+        'days_until_due': days_until_due,
+        'status': project.status
+    }
+    
+    return render_template("project_detail.html",
+                         project=project,
+                         events=events,
+                         assigned_users=assigned_users,
+                         clients=clients,
+                         buildings=buildings,
+                         stats=stats)
     
 #Events
 @app.route("/events")
@@ -547,6 +771,7 @@ def events_delete(event_id):
     db.session.commit()
     flash("Event deleted.", "info")
     return redirect(url_for("events"))
+
 #Generate Invoice and Proposal
 #Invoice route
 @app.route("/project/<int:id>/generate_invoice")
@@ -697,4 +922,3 @@ def unassign_client_from_project(project_id, user_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
-# new updated file
