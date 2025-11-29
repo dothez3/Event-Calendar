@@ -49,6 +49,11 @@
       <a class="nav-link {% if request.endpoint=='events' %}active{% endif %}" href="{{ url_for('events') }}">Events</a>
       <!--  changes: Show employee-only menu items -->
       {% if current_user.role == 'employee' %}
+        <!-- changes: Notifications link for employees -->
+        <a class="nav-link {% if request.endpoint=='notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">Notifications</a>
+      {% endif %}
+      <!--  changes: Show employee-only menu items -->
+      {% if current_user.role == 'employee' %}
         <a class="nav-link {% if request.endpoint=='clients' %}active{% endif %}" href="{{ url_for('clients') }}">Clients</a>
         <a class="nav-link {% if request.endpoint=='buildings' %}active{% endif %}" href="{{ url_for('buildings') }}">Buildings</a>
         <a class="nav-link {% if request.endpoint=='admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}">User Management</a>

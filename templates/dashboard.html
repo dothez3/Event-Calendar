@@ -1,6 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
 <h2 class="mb-3">Dashboard</h2>
+
+<!--  changes: Notification form for clients to send messages to employees -->
+{% if current_user.role == 'client' %}
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">Send Notification to Employees</h5>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('notifications_create') }}">
+      <div class="mb-3">
+        <label class="form-label">Project (Optional)</label>
+        <select name="project_id" class="form-select">
+          <option value="">General Message</option>
+          {% for p in recent_projects %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Message</label>
+        <textarea name="message" class="form-control" rows="3" placeholder="Type your message here..." required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Send Notification</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-3">
   <div class="col-md-4">
     <div class="card"><div class="card-body">

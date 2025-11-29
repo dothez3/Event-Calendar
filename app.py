@@ -129,6 +129,18 @@ class Activity(db.Model):
     user = db.relationship('User', backref='activities')
     project = db.relationship('Project', backref='activities')
 
+#  changes: New Notification model for client-to-employee communication
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    
+    sender = db.relationship('User', backref='sent_notifications')
+    project = db.relationship('Project', backref='notifications')
+
 #CLI to init DB
 @app.cli.command("init-db")
 def init_db():
@@ -919,6 +931,76 @@ def unassign_client_from_project(project_id, user_id):
     db.session.commit()
     flash(f"{user_name} removed from {project_name}.", "info")
     return redirect(url_for("projects"))
+
+#  changes: Notification Routes for client-to-employee communication
+@app.route("/notifications")
+@login_required
+@employee_required  #  changes: Only employees can view notifications
+def notifications():
+    """View all notifications from clients (employee only)"""
+    #  changes: Get all notifications, ordered by newest first
+    all_notifications = Notification.query.order_by(Notification.created_at.desc()).all()
+    
+    #  changes: Count unread notifications
+    unread_count = Notification.query.filter_by(is_read=False).count()
+    
+    return render_template("notifications.html", 
+                         notifications=all_notifications, 
+                         unread_count=unread_count)
+
+@app.route("/notifications/create", methods=["POST"])
+@login_required  #  changes: Both clients and employees can create notifications
+def notifications_create():
+    """Create a new notification (clients send to employees)"""
+    message = request.form.get("message", "").strip()
+    project_id = request.form.get("project_id")
+    
+    if not message:
+        flash("Message cannot be empty.", "warning")
+        return redirect(request.referrer or url_for("dashboard"))
+    
+    #  changes: Create notification
+    notification = Notification(
+        sender_id=current_user.id,
+        project_id=int(project_id) if project_id else None,
+        message=message
+    )
+    db.session.add(notification)
+    db.session.commit()
+    
+    flash("Notification sent successfully!", "success")
+    return redirect(request.referrer or url_for("dashboard"))
+
+@app.route("/notifications/<int:notification_id>/mark-read", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can mark as read
+def notification_mark_read(notification_id):
+    """Mark a notification as read"""
+    notification = Notification.query.get_or_404(notification_id)
+    notification.is_read = True
+    db.session.commit()
+    return redirect(url_for("notifications"))
+
+@app.route("/notifications/<int:notification_id>/delete", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can delete notifications
+def notification_delete(notification_id):
+    """Delete a notification"""
+    notification = Notification.query.get_or_404(notification_id)
+    db.session.delete(notification)
+    db.session.commit()
+    flash("Notification deleted.", "info")
+    return redirect(url_for("notifications"))
+
+@app.route("/notifications/mark-all-read", methods=["POST"])
+@login_required
+@employee_required  #  changes: Only employees can mark all as read
+def notifications_mark_all_read():
+    """Mark all notifications as read"""
+    Notification.query.update({Notification.is_read: True})
+    db.session.commit()
+    flash("All notifications marked as read.", "success")
+    return redirect(url_for("notifications"))
 
 if __name__ == "__main__":
     app.run(debug=True)
