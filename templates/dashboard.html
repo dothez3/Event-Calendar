@@ -2,7 +2,7 @@
 {% block content %}
 <h2 class="mb-3">Dashboard</h2>
 
-<!--  changes: Notification form for clients to send messages to employees -->
+<!-- Notification form for clients to send messages -->
 {% if current_user.role == 'client' %}
 <div class="card mb-4">
   <div class="card-header bg-primary text-white">
@@ -21,56 +21,79 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Message</label>
-        <textarea name="message" class="form-control" rows="3" placeholder="Type your message here..." required></textarea>
+        <textarea name="message" class="form-control" rows="3" required></textarea>
       </div>
-      <button type="submit" class="btn btn-primary">Send Notification</button>
+      <button type="submit" class="btn btn-primary">Send</button>
     </form>
   </div>
 </div>
 {% endif %}
 
 <div class="row g-3">
+
+  <!-- Recent Events -->
   <div class="col-md-4">
-    <div class="card"><div class="card-body">
-      <h5 class="card-title">Stats</h5>
-      <ul class="mb-0">
-        <li>Total Projects: {{ stats.projects }}</li>
-        <li>Total Clients: {{ stats.clients }}</li>
-        <li>Total Events: {{ stats.events }}</li>
-      </ul>
-    </div></div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Recent Events</h5>
+        <ul class="mb-0">
+          {% for e in recent_events %}
+            <li>
+              {{ e.title }}
+              {% if e.project %} for {{ e.project.name }}{% endif %}
+              — {{ e.start.strftime('%Y-%m-%d %H:%M') }}
+            </li>
+          {% else %}
+            <li>No recent events.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
+
+  <!-- Future Events -->
   <div class="col-md-4">
-    <div class="card"><div class="card-body">
-      <h5 class="card-title">Recent Projects</h5>
-      <ul class="mb-0">
-       {% for p in recent_projects %}
-  <li>
-    {{ p.name }}
-    {% if p.client %}— {{ p.client.name }}{% endif %}
-    {% if p.activities %}
-      <small class="text-muted">
-        ({{ p.activities[-1].happened_at.strftime('%Y-%m-%d %H:%M') }})
-      </small>
-    {% endif %}
-  </li>
-{% else %}
-  <li>No recent projects yet.</li>
-{% endfor %}
-      </ul>
-    </div></div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Future Events</h5>
+        <ul class="mb-0">
+          {% for e in future_events %}
+            <li>
+              {{ e.title }}
+              {% if e.project %} for {{ e.project.name }}{% endif %}
+              — {{ e.start.strftime('%Y-%m-%d %H:%M') }}
+            </li>
+          {% else %}
+            <li>No future events.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
+
+  <!-- Recent Projects -->
   <div class="col-md-4">
-    <div class="card"><div class="card-body">
-      <h5 class="card-title">Recent Events</h5>
-      <ul class="mb-0">
-        {% for e in events %}
-          <li>{{ e.title }} {% if e.project %}for {{ e.project.name }}{% endif %} — {{ e.start.strftime('%Y-%m-%d %H:%M') }}</li>
-        {% else %}
-          <li>No events yet.</li>
-        {% endfor %}
-      </ul>
-    </div></div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Recent Projects</h5>
+        <ul class="mb-0">
+          {% for p in recent_projects %}
+            <li>
+              {{ p.name }}
+              {% if p.client %} — {{ p.client.name }}{% endif %}
+              {% if p.activities %}
+                <small class="text-muted">
+                  ({{ p.activities[-1].happened_at.strftime('%Y-%m-%d %H:%M') }})
+                </small>
+              {% endif %}
+            </li>
+          {% else %}
+            <li>No recent projects.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
+
 </div>
 {% endblock %}

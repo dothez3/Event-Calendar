@@ -306,8 +306,9 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    now = datetime.now()
+
     if current_user.role == 'employee':
-        # Employees see all data
         recent_projects = (
             db.session.query(Project)
             .join(Activity, Activity.project_id == Project.id)
@@ -316,39 +317,40 @@ def dashboard():
             .limit(6)
             .all()
         )
-        events = Event.query.order_by(Event.start.desc()).limit(5).all()
-        stats = {
-            "projects": Project.query.count(),
-            "clients": Client.query.count(),
-            "events": Event.query.count()
-        }
+
+        base_events = Event.query.order_by(Event.start.desc()).all()
+
     else:
-        # Clients only see their assigned projects and related events
-        assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
-        
-        if assigned_project_ids:
-            recent_projects = Project.query.filter(Project.id.in_(assigned_project_ids)).limit(6).all()
-            events = Event.query.filter(Event.project_id.in_(assigned_project_ids)).order_by(Event.start.desc()).limit(5).all()
-            stats = {
-                "projects": len(assigned_project_ids),
-                "clients": 0,  # Clients don't see client count
-                "events": Event.query.filter(Event.project_id.in_(assigned_project_ids)).count()
-            }
+        assigned_ids = [pa.project_id for pa in current_user.project_assignments]
+
+        if assigned_ids:
+            recent_projects = (
+                Project.query
+                .filter(Project.id.in_(assigned_ids))
+                .limit(6)
+                .all()
+            )
+
+            base_events = (
+                Event.query
+                .filter(Event.project_id.in_(assigned_ids))
+                .order_by(Event.start.desc())
+                .all()
+            )
         else:
             recent_projects = []
-            events = []
-            stats = {
-                "projects": 0,
-                "clients": 0,
-                "events": 0
-            }
+            base_events = []
+
+    recent_events = [e for e in base_events if e.start <= now][:5]
+    future_events = sorted([e for e in base_events if e.start > now], key=lambda e: e.start)[:5]
 
     return render_template(
         "dashboard.html",
         recent_projects=recent_projects,
-        events=events,
-        stats=stats
+        recent_events=recent_events,
+        future_events=future_events
     )
+
 #Main Menu
 @app.route("/main")
 @login_required
