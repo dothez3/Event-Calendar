@@ -4,6 +4,36 @@
   <h3>Buildings</h3>
 </div>
 
+<!-- Search Bar -->
+<form method="get" action="{{ url_for('buildings') }}" class="mb-4">
+  <div class="row g-2">
+    <div class="col-md-7">
+      <input 
+        name="q" 
+        class="form-control" 
+        placeholder="Search by name, street, city, state, or ZIP..." 
+        value="{{ search_query or '' }}"
+      >
+    </div>
+    <div class="col-md-3">
+      <select name="sort" class="form-select">
+        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+        <option value="city" {% if sort_by == 'city' %}selected{% endif %}>Sort by City</option>
+        <option value="state" {% if sort_by == 'state' %}selected{% endif %}>Sort by State</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-primary w-100" type="submit">Search</button>
+    </div>
+  </div>
+  {% if search_query %}
+  <div class="mt-2">
+    <a href="{{ url_for('buildings') }}" class="btn btn-sm btn-outline-secondary">Clear Search</a>
+    <span class="text-muted ms-2">{{ buildings|length }} building(s) found</span>
+  </div>
+  {% endif %}
+</form>
+
 <form class="card p-3 mb-4" method="post" action="{{ url_for('buildings_create') }}">
   <div class="row g-2">
     <div class="col-md-4">
@@ -35,7 +65,6 @@
     <button class="btn btn-primary">Add Building</button>
   </div>
 </form>
-
 <table class="table table-hover">
   <thead>
     <tr><th>Name</th><th>Address</th><th>Notes</th><th class="text-end">Actions</th></tr>
@@ -43,7 +72,7 @@
   <tbody>
     {% for b in buildings %}
     <tr>
-      <td>{{ b.name }}</td>
+      <td><strong>{{ b.name }}</strong></td>
       <td>{{ b.street }}, {{ b.city }} {{ b.state }} {{ b.zip }}</td>
       <td class="text-truncate" style="max-width: 300px;">{{ b.notes }}</td>
       <td class="text-end">
@@ -80,7 +109,15 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="4" class="text-center text-muted">No buildings yet.</td></tr>
+    <tr>
+      <td colspan="4" class="text-center text-muted">
+        {% if search_query %}
+          No buildings found matching "{{ search_query }}". <a href="{{ url_for('buildings') }}">Clear search</a>
+        {% else %}
+          No buildings yet.
+        {% endif %}
+      </td>
+    </tr>
     {% endfor %}
   </tbody>
 </table>

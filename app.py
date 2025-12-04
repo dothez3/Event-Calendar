@@ -499,7 +499,39 @@ def client_detail(id):
 @login_required
 @employee_required  #  changes: Only employees can manage buildings
 def buildings():
-    return render_template("buildings.html", buildings=Building.query.all())
+    """Display all buildings with optional search and sort"""
+    search_query = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort", "name")  # Default sort by name
+    
+    # Start with base query
+    query = Building.query
+    
+    # Apply search filter if provided
+    if search_query:
+        query = query.filter(
+            or_(
+                Building.name.ilike(f"%{search_query}%"),
+                Building.street.ilike(f"%{search_query}%"),
+                Building.city.ilike(f"%{search_query}%"),
+                Building.state.ilike(f"%{search_query}%"),
+                Building.zip.ilike(f"%{search_query}%")
+            )
+        )
+    
+    # Apply sorting
+    if sort_by == "name":
+        query = query.order_by(Building.name)
+    elif sort_by == "city":
+        query = query.order_by(Building.city)
+    elif sort_by == "state":
+        query = query.order_by(Building.state)
+    
+    buildings_list = query.all()
+    
+    return render_template("buildings.html", 
+                         buildings=buildings_list,
+                         search_query=search_query,
+                         sort_by=sort_by)
 
 @app.route("/buildings/create", methods=["POST"])
 @login_required
