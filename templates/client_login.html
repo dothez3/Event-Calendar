@@ -1,3 +1,4 @@
+<!--  changes: New client login page with separate authentication -->
 {% extends "base.html" %}
 
 {% block content %}
@@ -6,6 +7,7 @@
 
   <div class="border rounded p-4 shadow" style="width: 320px; background-color: #f8f9fa;">
 
+    <!--  changes: Client-specific login form -->
     <h3 class="text-center mb-4">Client Login</h3>
 
     <form method="post">
@@ -30,12 +32,14 @@
 
     </form>
 
+    <!--  changes: Link to client registration -->
     <div class="d-grid mb-2">
 
       <a href="{{ url_for('register', type='client') }}" class="btn btn-outline-secondary">Create an account</a>
 
     </div>
 
+    <!--  changes: Link to switch to employee login -->
     <div class="text-center mt-3">
 
       <a href="{{ url_for('index') }}">Employee Login</a>
