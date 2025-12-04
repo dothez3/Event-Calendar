@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+
+<!-- Company Logo -->
+<div class="mb-4 text-center">
+  <img src="{{ url_for('static', filename='images/company_logo.png') }}"
+       alt="Company Logo"
+       style="width: 100%; max-width: 900px; height: auto;">
+</div>
+
 <h2 class="mb-3">Dashboard</h2>
+
 
 <!-- Notification form for clients to send messages -->
 {% if current_user.role == 'client' %}
