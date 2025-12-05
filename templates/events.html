@@ -2,17 +2,32 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-  /* Color coding for event types */
-  .event-proposal { border-left: 8px solid #00ff00; } /* Blue */
-  .event-survey { border-left: 8px solid #00ff00; } /* Green */
-  .event-asbuilt { border-left: 8px solid #00ff00; } /* Orange */
-  .event-design { border-left: 8px solid #00ff00; } /* Purple */
-  .event-client-meeting { border-left: 8px solid #ffff00; } /* Brown */
-  .event-drawings-created { border-left: 8px solid #ffff00; } /* Red */
-  .event-drawings-printed { border-left: 8px solid #ff0000; } /* Teal */
-  .event-bill-sent { border-left: 8px solid #ff0000; } /* Yellow */
-  .event- { border-left: 8px solid #6c757d; } /* Gray */
+  /* Color coding for event types - Using only GREEN, YELLOW, RED */
+  .event-proposal { border-left: 8px solid #00ff00; }
+  .event-survey { border-left: 8px solid #00ff00; }
+  .event-asbuilt { border-left: 8px solid #00ff00; }
+  .event-design { border-left: 8px solid #00ff00; }
+  .event-client-meeting { border-left: 8px solid #ffff00; }
+  .event-drawings-created { border-left: 8px solid #ffff00; }
+  .event-drawings-printed { border-left: 8px solid #ff0000; }
+  .event-bill-sent { border-left: 8px solid #ff0000; }
+  .event- { border-left: 8px solid #6c757d; }
 
+  /* Custom badge colors - darker versions for better readability */
+  .badge-green {
+    background-color: #28a745 !important;
+    color: #fff !important;
+  }
+  
+  .badge-yellow {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+  }
+  
+  .badge-red {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+  }
   
   .event-badge {
     font-size: 0.75rem;
@@ -33,42 +48,42 @@
   .fc-event-proposal { 
     background-color: #00ff00 !important; 
     border-color: #00ff00 !important; 
-    color: white !important;
+    color: #000 !important;
   }
   .fc-event-survey { 
     background-color: #00ff00 !important; 
     border-color: #00ff00 !important; 
-    color: white !important;
+    color: #000 !important;
   }
   .fc-event-asbuilt { 
     background-color: #00ff00 !important; 
     border-color: #00ff00 !important; 
-    color: white !important;
+    color: #000 !important;
   }
   .fc-event-design { 
     background-color: #00ff00 !important; 
     border-color: #00ff00 !important; 
-    color: white !important;
+    color: #000 !important;
   }
   .fc-event-client-meeting { 
     background-color: #ffff00 !important; 
     border-color: #ffff00 !important; 
-    color: white !important;
+    color: #000 !important;
   }
   .fc-event-drawings-created { 
     background-color: #ffff00 !important; 
     border-color: #ffff00 !important; 
-    color: white !important;
+    color: #000 !important;
   }
   .fc-event-drawings-printed { 
     background-color: #ff0000 !important; 
     border-color: #ff0000 !important; 
-    color: white !important;
+    color: #fff !important;
   }
   .fc-event-bill-sent { 
     background-color: #ff0000 !important; 
     border-color: #ff0000 !important; 
-    color: white !important;
+    color: #fff !important;
   }
   
   /* Modern calendar event styling */
@@ -105,7 +120,6 @@
 
 <!-- Card View Container -->
 <div id="cardView">
-  <!--  changes: Create Event Form (Employee Only) -->
   {% if current_user.role == 'employee' %}
   <form method="post" action="{{ url_for('events_create') }}" class="row g-3 mb-4">
     <div class="col-md-3">
@@ -156,22 +170,12 @@
           <div class="d-flex justify-content-between align-items-start mb-2">
             <h5 class="card-title mb-0">{{ e.title }}</h5>
             {% if e.event_type %}
-              {% if e.event_type == 'Blueprint Delivery' %}
-                <span class="badge bg-primary event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Permit Submission' %}
-                <span class="badge bg-success event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Client Meeting' %}
-                <span class="badge bg-warning event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Design Review' %}
-                <span class="badge" class="event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Site Visit' %}
-                <span class="badge" class="event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Site Inspection' %}
-                <span class="badge bg-danger event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Contractor Meeting' %}
-                <span class="badge bg-info event-badge">{{ e.event_type }}</span>
-              {% elif e.event_type == 'Deadline Milestone' %}
-                <span class="badge" class="event-badge">{{ e.event_type }}</span>
+              {% if e.event_type in ['Proposal', 'Survey', 'Asbuilt', 'Design'] %}
+                <span class="badge badge-green event-badge">{{ e.event_type }}</span>
+              {% elif e.event_type in ['Client Meeting', 'Drawings Created'] %}
+                <span class="badge badge-yellow event-badge">{{ e.event_type }}</span>
+              {% elif e.event_type in ['Drawings Printed', 'Bill Sent'] %}
+                <span class="badge badge-red event-badge">{{ e.event_type }}</span>
               {% else %}
                 <span class="badge bg-secondary event-badge">{{ e.event_type }}</span>
               {% endif %}
@@ -185,7 +189,6 @@
           {% endif %}
         </div>
 
-        <!--  changes: Edit Section (Collapsible) - Employee Only -->
         {% if current_user.role == 'employee' %}
         <div class="collapse" id="edit{{ e.id }}">
           <div class="card-body border-top bg-light">
@@ -195,14 +198,14 @@
               </div>
               <div class="mb-2">
                 <select name="event_type" class="form-select">
-                  <option value="Blueprint Delivery" {% if e.event_type == "Blueprint Delivery" %}selected{% endif %}>Blueprint Delivery</option>
-                  <option value="Permit Submission" {% if e.event_type == "Permit Submission" %}selected{% endif %}>Permit Submission</option>
+                  <option value="Proposal" {% if e.event_type == "Proposal" %}selected{% endif %}>Proposal</option>
+                  <option value="Survey" {% if e.event_type == "Survey" %}selected{% endif %}>Survey</option>
+                  <option value="Asbuilt" {% if e.event_type == "Asbuilt" %}selected{% endif %}>Asbuilt</option>
+                  <option value="Design" {% if e.event_type == "Design" %}selected{% endif %}>Design</option>
                   <option value="Client Meeting" {% if e.event_type == "Client Meeting" %}selected{% endif %}>Client Meeting</option>
-                  <option value="Design Review" {% if e.event_type == "Design Review" %}selected{% endif %}>Design Review</option>
-                  <option value="Site Visit" {% if e.event_type == "Site Visit" %}selected{% endif %}>Site Visit</option>
-                  <option value="Site Inspection" {% if e.event_type == "Site Inspection" %}selected{% endif %}>Site Inspection</option>
-                  <option value="Contractor Meeting" {% if e.event_type == "Contractor Meeting" %}selected{% endif %}>Contractor Meeting</option>
-                  <option value="Deadline Milestone" {% if e.event_type == "Deadline Milestone" %}selected{% endif %}>Deadline/Milestone</option>
+                  <option value="Drawings Created" {% if e.event_type == "Drawings Created" %}selected{% endif %}>Drawings Created</option>
+                  <option value="Drawings Printed" {% if e.event_type == "Drawings Printed" %}selected{% endif %}>Drawings Printed</option>
+                  <option value="Bill Sent" {% if e.event_type == "Bill Sent" %}selected{% endif %}>Bill Sent</option>
                 </select>
               </div>
               <div class="mb-2">
@@ -231,7 +234,6 @@
         </div>
         {% endif %}
 
-        <!--  changes: Card Footer - Employee Only -->
         {% if current_user.role == 'employee' %}
         <div class="card-footer d-flex justify-content-between bg-light">
           <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#edit{{ e.id }}">
@@ -257,7 +259,6 @@
   <div id="calendar"></div>
 </div>
 
-<!--  changes: Modal for Quick Event Creation (Employee Only) -->
 {% if current_user.role == 'employee' %}
 <div class="modal fade" id="quickEventModal" tabindex="-1" aria-labelledby="quickEventModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -275,14 +276,14 @@
           <div class="mb-3">
             <label for="modalEventType" class="form-label">Event Type</label>
             <select class="form-select" id="modalEventType" name="event_type">
-              <option value="Blueprint Delivery">Blueprint Delivery</option>
-              <option value="Permit Submission">Permit Submission</option>
+              <option value="Proposal">Proposal</option>
+              <option value="Survey">Survey</option>
+              <option value="Asbuilt">Asbuilt</option>
+              <option value="Design">Design</option>
               <option value="Client Meeting">Client Meeting</option>
-              <option value="Design Review">Design Review</option>
-              <option value="Site Visit">Site Visit</option>
-              <option value="Site Inspection">Site Inspection</option>
-              <option value="Contractor Meeting">Contractor Meeting</option>
-              <option value="Deadline Milestone">Deadline/Milestone</option>
+              <option value="Drawings Created">Drawings Created</option>
+              <option value="Drawings Printed">Drawings Printed</option>
+              <option value="Bill Sent">Bill Sent</option>
             </select>
           </div>
           <div class="mb-3">
@@ -317,7 +318,6 @@
 </div>
 {% endif %}
 
-<!-- Modal for Event Details -->
 <div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-labelledby="eventDetailsModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -342,7 +342,6 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <!--  changes: Edit/Delete buttons only for employees -->
         {% if current_user.role == 'employee' %}
         <button type="button" class="btn btn-outline-danger" id="deleteEventBtn">
           <i class="bi bi-trash"></i> Delete
@@ -359,7 +358,6 @@
 <script>
 let calendar;
 
-// Show Card View
 function showCardView() {
   document.getElementById('cardView').style.display = 'block';
   document.getElementById('calendarView').style.display = 'none';
@@ -367,24 +365,20 @@ function showCardView() {
   document.getElementById('calendarViewBtn').classList.remove('active');
 }
 
-// Show Calendar View
 function showCalendarView() {
   document.getElementById('cardView').style.display = 'none';
   document.getElementById('calendarView').style.display = 'block';
   document.getElementById('cardViewBtn').classList.remove('active');
   document.getElementById('calendarViewBtn').classList.add('active');
   
-  // Initialize calendar if not already done
   if (!calendar) {
     initCalendar();
   }
 }
 
-// Initialize FullCalendar
 function initCalendar() {
   const calendarEl = document.getElementById('calendar');
   
-  // Convert events from Jinja to JavaScript
   const events = [
     {% for e in events %}
     {
@@ -413,36 +407,31 @@ function initCalendar() {
     },
     events: events,
     eventClick: function(info) {
-      // Show event details in modal
       const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
       
-      // Get event type badge color
       const eventType = info.event.extendedProps.eventType;
       let badgeClass = 'bg-secondary';
-      if (eventType === 'Blueprint Delivery') badgeClass = 'bg-primary';
-      else if (eventType === 'Permit Submission') badgeClass = 'bg-success';
-      else if (eventType === 'Client Meeting') badgeClass = 'bg-warning';
-      else if (eventType === 'Design Review') badgeClass = 'badge';
-      else if (eventType === 'Site Visit') badgeClass = 'badge';
-      else if (eventType === 'Site Inspection') badgeClass = 'bg-danger';
-      else if (eventType === 'Contractor Meeting') badgeClass = 'bg-info';
-      else if (eventType === 'Deadline Milestone') badgeClass = 'bg-warning';
       
-      // Populate modal with event details
+      if (['Proposal', 'Survey', 'Asbuilt', 'Design'].includes(eventType)) {
+        badgeClass = 'badge-green';
+      }
+      else if (['Client Meeting', 'Drawings Created'].includes(eventType)) {
+        badgeClass = 'badge-yellow';
+      }
+      else if (['Drawings Printed', 'Bill Sent'].includes(eventType)) {
+        badgeClass = 'badge-red';
+      }
+      
       document.getElementById('detailTitle').textContent = info.event.title;
       
       const badge = document.getElementById('detailBadge');
       badge.textContent = eventType;
-      badge.className = 'badge ' + badgeClass;
-      if (eventType === 'Design Review') badge.style.backgroundColor = '#6f42c1';
-      if (eventType === 'Site Visit') badge.style.backgroundColor = '#8b4513';
-      if (eventType === 'Deadline Milestone') badge.style.backgroundColor = '#e0a800';
+      badge.className = 'badge ' + badgeClass + ' event-badge';
       
       document.getElementById('detailProject').textContent = info.event.extendedProps.project || 'No project assigned';
       document.getElementById('detailStart').textContent = info.event.start.toLocaleString();
       document.getElementById('detailEnd').textContent = info.event.end ? info.event.end.toLocaleString() : 'Not specified';
       
-      // Show/hide notes
       if (info.event.extendedProps.notes) {
         document.getElementById('detailNotesContainer').style.display = 'block';
         document.getElementById('detailNotes').textContent = info.event.extendedProps.notes;
@@ -450,14 +439,10 @@ function initCalendar() {
         document.getElementById('detailNotesContainer').style.display = 'none';
       }
       
-      //  changes: Only set up edit/delete handlers if user is employee
       {% if current_user.role == 'employee' %}
-      // Store event ID for edit/delete actions
       document.getElementById('editEventBtn').onclick = function() {
-        // Redirect to card view and trigger edit
         showCardView();
         modal.hide();
-        // Scroll to the event card and expand edit form
         setTimeout(() => {
           const editBtn = document.querySelector(`[data-bs-target="#edit${info.event.id}"]`);
           if (editBtn) {
@@ -469,7 +454,6 @@ function initCalendar() {
       
       document.getElementById('deleteEventBtn').onclick = function() {
         if (confirm('Are you sure you want to delete this event?')) {
-          // Create form and submit delete request
           const form = document.createElement('form');
           form.method = 'POST';
           form.action = `/events/delete/${info.event.id}`;
@@ -481,19 +465,15 @@ function initCalendar() {
       
       modal.show();
     },
-    //  changes: Only allow date clicking for employees
     {% if current_user.role == 'employee' %}
     dateClick: function(info) {
-      // Open modal when clicking on a date
       const modal = new bootstrap.Modal(document.getElementById('quickEventModal'));
       
-      // Pre-fill the start date/time with the clicked date at 9 AM
       const clickedDate = new Date(info.dateStr);
       clickedDate.setHours(9, 0, 0, 0);
       const dateTimeString = clickedDate.toISOString().slice(0, 16);
       document.getElementById('modalStart').value = dateTimeString;
       
-      // Clear other fields
       document.getElementById('modalTitle').value = '';
       document.getElementById('modalEventType').selectedIndex = 0;
       document.getElementById('modalProject').selectedIndex = 0;
@@ -501,15 +481,15 @@ function initCalendar() {
       document.getElementById('modalNotes').value = '';
       
       modal.show();
-    },
+    }
     {% endif %}
+    ,
     height: 'auto'
   });
   
   calendar.render();
 }
 
-// Set Card View as default on load
 document.getElementById('cardViewBtn').classList.add('active');
 </script>
 
