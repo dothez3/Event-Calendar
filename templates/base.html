@@ -47,15 +47,42 @@
       <a class="nav-link {% if request.endpoint=='projects' %}active{% endif %}" href="{{ url_for('projects') }}">Projects</a>
       <!--  changes: Events visible to both employees and clients -->
       <a class="nav-link {% if request.endpoint=='events' %}active{% endif %}" href="{{ url_for('events') }}">Events</a>
-      <!--  changes: Show employee-only menu items -->
-      {% if current_user.role == 'employee' %}
-        <!-- changes: Notifications link for employees -->
-        <a class="nav-link {% if request.endpoint=='notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">Notifications</a>
-      {% endif %}
+      
+      
       <!--  changes: Show employee-only menu items -->
       {% if current_user.role == 'employee' %}
         <a class="nav-link {% if request.endpoint=='clients' %}active{% endif %}" href="{{ url_for('clients') }}">Clients</a>
         <a class="nav-link {% if request.endpoint=='buildings' %}active{% endif %}" href="{{ url_for('buildings') }}">Buildings</a>
+        <!-- changes: Notifications link for employees -->
+        
+
+
+
+
+        <a href="{{ url_for('notifications') }}"
+          class="nav-link {% if unread_notifications > 0 %}color: red{% else %}btn-secondary{% endif %}">
+            Notifications
+            {% if unread_notifications > 0 %}
+              <span class="badge bg-light text-dark">{{ unread_notifications }}</span>
+            {% endif %}
+        </a>
+
+
+
+        <a class="nav-link {% if request.endpoint=='timecard' %}active{% endif %}"
+          href="{{ url_for('timecard') }}">
+          Time Card
+        </a>
+
+
+
+
+
+        
+
+
+
+
         <a class="nav-link {% if request.endpoint=='admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}">User Management</a>
       {% endif %}
     {% endif %}

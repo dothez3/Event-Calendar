@@ -93,6 +93,22 @@ class Event(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     project = db.relationship('Project', backref='events')
 
+
+
+class TimeEntry(db.Model):
+    __tablename__ = 'time_entry'  
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    hours = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(255))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    project = db.relationship('Project', backref='time_entries')
+    user = db.relationship('User', backref='time_entries')
+
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -735,6 +751,15 @@ def project_detail(id):
         'days_until_due': days_until_due,
         'status': project.status
     }
+
+    time_entries = TimeEntry.query.filter_by(project_id=id).all()
+    total_hours = sum(entry.hours for entry in time_entries)
+
+   
+
+
+
+
     
     return render_template("project_detail.html",
                          project=project,
@@ -742,7 +767,9 @@ def project_detail(id):
                          assigned_users=assigned_users,
                          clients=clients,
                          buildings=buildings,
-                         stats=stats)
+                         stats=stats,
+                         time_entries=time_entries,
+                         total_hours=total_hours)
     
 #Events
 @app.route("/events")
@@ -1035,6 +1062,46 @@ def notifications_mark_all_read():
     db.session.commit()
     flash("All notifications marked as read.", "success")
     return redirect(url_for("notifications"))
+
+
+def unread_notification_count():
+    if not current_user.is_authenticated:
+        return 0
+    return Notification.query.filter_by(is_read=False).count()
+@app.context_processor
+def inject_notification_count():
+    return {
+        'unread_notifications': unread_notification_count()
+    }
+
+
+@app.route('/timecard', methods=['GET', 'POST'])
+@login_required
+def timecard():
+    projects = Project.query.all()
+
+    if request.method == 'POST':
+        project_id = request.form.get('project_id')
+        hours = request.form.get('hours')
+        description = request.form.get('description')
+
+        if project_id and hours:
+            entry = TimeEntry(
+                user_id=current_user.id,
+                project_id=int(project_id),
+                hours=float(hours),
+                description=description
+            )
+            db.session.add(entry)
+            db.session.commit()
+            flash('Time entry logged!', 'success')
+            return redirect(url_for('timecard'))
+
+    return render_template('timecard.html', projects=projects)
+
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

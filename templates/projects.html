@@ -3,14 +3,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Projects</h2>
   <!-- Show role badge and user management link for employees -->
-  <div>
-    {% if current_user.role == 'employee' %}
-      <span class="badge bg-success me-2">Employee View</span>
-      <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-primary">Manage Users</a>
-    {% else %}
-      <span class="badge bg-info">Client View - Assigned Projects Only</span>
-    {% endif %}
-  </div>
+  
 </div>
 
 <!-- Create Project Form (Employees Only) -->
