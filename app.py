@@ -216,8 +216,8 @@ def init_db():
     
     # Add multiple events
     e1 = Event(title="Pre-Construction Planning", event_type="Client Meeting", project=p1, start=datetime(2025,11,13,12,31))
-    e2 = Event(title="Site Inspection", event_type="Site Inspection", project=p1, start=datetime(2025,11,20,9,0), end=datetime(2025,11,20,11,0))
-    e3 = Event(title="Blueprint Review", event_type="Design Review", project=p2, start=datetime(2025,11,25,14,0))
+    e2 = Event(title="Site Inspection", event_type="Survey", project=p1, start=datetime(2025,11,20,9,0), end=datetime(2025,11,20,11,0))
+    e3 = Event(title="Blueprint Review", event_type="Design", project=p2, start=datetime(2025,11,25,14,0))
     db.session.add_all([e1, e2, e3])
     
     db.session.commit()

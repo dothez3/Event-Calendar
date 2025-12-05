@@ -67,6 +67,22 @@
   .back-button:hover {
     transform: translateX(-5px);
   }
+  
+  /* Badge colors matching events.html */
+  .badge-green {
+    background-color: #28a745 !important;
+    color: #fff !important;
+  }
+  
+  .badge-yellow {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+  }
+  
+  .badge-red {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+  }
 </style>
 
 <!-- Header with Back Button -->
@@ -254,26 +270,23 @@
     {% if events %}
       <div class="row g-3">
         {% for event in events %}
-        {% set border_color = '#198754' %}  {# Default green #}
-        {% if event.event_type == 'Blueprint Delivery' %}
-          {% set border_color = '#0d6efd' %}  {# Blue #}
-        {% elif event.event_type == 'Permit Submission' %}
-          {% set border_color = '#198754' %}  {# Green #}
-        {% elif event.event_type == 'Client Meeting' %}
-          {% set border_color = '#fd7e14' %}  {# Orange #}
-        {% elif event.event_type == 'Design Review' %}
-          {% set border_color = '#6f42c1' %}  {# Purple #}
-        {% elif event.event_type == 'Site Visit' %}
-          {% set border_color = '#a0522d' %}  {# Brown #}
-        {% elif event.event_type == 'Site Inspection' %}
-          {% set border_color = '#dc3545' %}  {# Red #}
-        {% elif event.event_type == 'Contractor Meeting' %}
-          {% set border_color = '#17a2b8' %}  {# Teal #}
-        {% elif event.event_type == 'Deadline Milestone' %}
-          {% set border_color = '#ffc107' %}  {# Yellow #}
-        {% else %}
-          {% set border_color = '#6c757d' %}  {# Gray #}
+        {% set border_color = '#6c757d' %}
+        {% set badge_class = 'bg-secondary' %}
+        
+        {# GREEN events: Proposal, Survey, Asbuilt, Design #}
+        {% if event.event_type in ['Proposal', 'Survey', 'Asbuilt', 'Design'] %}
+          {% set border_color = '#00ff00' %}
+          {% set badge_class = 'badge-green' %}
+        {# YELLOW events: Client Meeting, Drawings Created #}
+        {% elif event.event_type in ['Client Meeting', 'Drawings Created'] %}
+          {% set border_color = '#ffff00' %}
+          {% set badge_class = 'badge-yellow' %}
+        {# RED events: Drawings Printed, Bill Sent #}
+        {% elif event.event_type in ['Drawings Printed', 'Bill Sent'] %}
+          {% set border_color = '#ff0000' %}
+          {% set badge_class = 'badge-red' %}
         {% endif %}
+        
         <div class="col-md-12">
           <div class="card event-card" style="border-left-color: {{ border_color }};">
             <div class="card-body">
@@ -299,25 +312,7 @@
                 </div>
                 <div>
                   {% if event.event_type %}
-                    {% if event.event_type == 'Blueprint Delivery' %}
-                      <span class="badge bg-primary">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Permit Submission' %}
-                      <span class="badge bg-success">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Client Meeting' %}
-                      <span class="badge bg-warning">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Design Review' %}
-                      <span class="badge" style="background-color: #6f42c1; color: white;">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Site Visit' %}
-                      <span class="badge" style="background-color: #a0522d; color: white;">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Site Inspection' %}
-                      <span class="badge bg-danger">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Contractor Meeting' %}
-                      <span class="badge bg-info">{{ event.event_type }}</span>
-                    {% elif event.event_type == 'Deadline Milestone' %}
-                      <span class="badge" style="background-color: #ffc107; color: #333;">{{ event.event_type }}</span>
-                    {% else %}
-                      <span class="badge bg-secondary">{{ event.event_type }}</span>
-                    {% endif %}
+                    <span class="badge {{ badge_class }}">{{ event.event_type }}</span>
                   {% endif %}
                 </div>
               </div>
