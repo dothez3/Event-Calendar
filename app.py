@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from datetime import datetime
+from datetime import date, datetime
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key")
@@ -599,6 +599,9 @@ def buildings_delete(id):
 def projects():
     #  changes: Filter projects based on user role
     q = request.args.get("q", "").strip()
+    sort_by = request.args.get("sort", "name")  # Get sort parameter, default to 'name'
+    page = request.args.get("page", 1, type=int)  # Get page number, default to 1
+    per_page = 15  # Projects per page
     
     if current_user.role == 'employee':
         # Employees see all projects
@@ -608,9 +611,10 @@ def projects():
         assigned_project_ids = [pa.project_id for pa in current_user.project_assignments]
         if not assigned_project_ids:
             # No projects assigned, show empty list
-            return render_template("projects.html", projects=[], q=q, clients=Client.query.all(), buildings=Building.query.all(), users=[])
+            return render_template("projects.html", projects=[], pagination=None, q=q, sort_by=sort_by, clients=Client.query.all(), buildings=Building.query.all(), users=[])
         query = Project.query.join(Client, isouter=True).filter(Project.id.in_(assigned_project_ids))
 
+    # Apply search filter
     if q:
         query = query.filter(
             or_(
@@ -620,11 +624,35 @@ def projects():
             )
         )
 
-    projects = query.order_by(Project.id.desc()).all()
+    # Apply sorting
+    if sort_by == "name":
+        query = query.order_by(Project.name)
+    elif sort_by == "due_date":
+        query = query.order_by(Project.due_date.desc().nullslast())
+    elif sort_by == "status":
+        query = query.order_by(Project.status)
+    elif sort_by == "client":
+        query = query.order_by(Client.name.nullslast())
+    else:
+        query = query.order_by(Project.id.desc())  # Default fallback
+
+    # Paginate results
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    projects = pagination.items
+    
+    # Mark overdue projects
+    from datetime import date
+    today = date.today()
+    for project in projects:
+        if project.due_date and project.due_date < today and project.status != "Done":
+            project.is_overdue = True
+        else:
+            project.is_overdue = False
+    
     # MERGED: Pass all users to template for client assignment dropdown (your feature)
     # AND pass buildings for building associations (teammate's feature)
     all_users = User.query.filter_by(role='client').all() if current_user.role == 'employee' else []
-    return render_template("projects.html", projects=projects, q=q, clients=Client.query.all(), buildings=Building.query.all(), users=all_users)
+    return render_template("projects.html", projects=projects, pagination=pagination, q=q, sort_by=sort_by, clients=Client.query.all(), buildings=Building.query.all(), users=all_users)
 
 @app.route("/projects/create", methods=["POST"])
 @login_required

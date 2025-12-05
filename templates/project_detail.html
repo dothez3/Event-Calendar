@@ -118,6 +118,7 @@
           <select name="status" class="form-select">
             <option {% if project.status == "Planned" %}selected{% endif %}>Planned</option>
             <option {% if project.status == "In Progress" %}selected{% endif %}>In Progress</option>
+            <option {% if project.status == "Overdue" %}selected{% endif %}>Overdue</option>
             <option {% if project.status == "Done" %}selected{% endif %}>Done</option>
           </select>
         </div>
@@ -237,7 +238,9 @@
       <div class="info-row">
         <span class="info-label"><i class="bi bi-calendar"></i> Due Date:</span>
         {% if project.due_date %}
-          {{ project.due_date.strftime('%B %d, %Y') }}
+          <span {% if (stats.days_until_due is not none and stats.days_until_due < 0) or project.status == 'Overdue' %}style="color: red; font-weight: bold;"{% endif %}>
+            {{ project.due_date.strftime('%B %d, %Y') }}
+          </span>
           {% if stats.days_until_due is not none %}
             {% if stats.days_until_due < 0 %}
               <span class="badge bg-danger ms-2">Overdue</span>
@@ -251,10 +254,14 @@
       </div>
       <div class="info-row">
         <span class="info-label"><i class="bi bi-flag"></i> Status:</span>
-        {% if project.status == "In Progress" %}
-          <span class="badge bg-success">{{ project.status }}</span>
-        {% elif project.status == "Done" %}
+        {% if project.status == "Planned" %}
+          <span class="badge bg-secondary">{{ project.status }}</span>
+        {% elif project.status == "In Progress" %}
           <span class="badge bg-primary">{{ project.status }}</span>
+        {% elif project.status == "Overdue" %}
+          <span class="badge bg-danger">{{ project.status }}</span>
+        {% elif project.status == "Done" %}
+          <span class="badge bg-success">{{ project.status }}</span>
         {% else %}
           <span class="badge bg-secondary">{{ project.status }}</span>
         {% endif %}

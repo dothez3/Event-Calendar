@@ -4,8 +4,11 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Clients</h2>
-  <div>
+  <div class="d-flex align-items-center gap-3">
     <span class="text-muted">{{ clients|length }} client(s)</span>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createClientModal">
+      <i class="bi bi-plus-circle"></i> Create New Client
+    </button>
   </div>
 </div>
 
@@ -32,36 +35,6 @@
   </div>
   <div class="col-md-2">
     <button type="submit" class="btn btn-primary w-100">Search</button>
-  </div>
-</form>
-
-<!-- Create Client Form with Address Fields -->
-<form method="post" action="{{ url_for('clients_create') }}" class="row g-3 mb-4">
-  <div class="col-md-3">
-    <input name="name" class="form-control" placeholder="Client name" required>
-  </div>
-  <div class="col-md-3">
-    <input name="contact" class="form-control" placeholder="Contact email">
-  </div>
-  <div class="col-md-2">
-    <input name="phone" class="form-control" placeholder="Contact phone">
-  </div>
-  <!-- Address Fields -->
-  <div class="col-md-4">
-    <input name="street" class="form-control" placeholder="Street address">
-  </div>
-  <div class="col-md-3">
-    <input name="city" class="form-control" placeholder="City">
-  </div>
-  <div class="col-md-2">
-    <input name="state" class="form-control" placeholder="State" maxlength="2">
-  </div>
-  <div class="col-md-2">
-    <input name="zip" class="form-control" placeholder="ZIP code">
-  </div>
-  <div class="col-md-5"></div> <!-- Spacer -->
-  <div class="col-md-12 text-center">
-    <button class="btn btn-success px-5">Add Client</button>
   </div>
 </form>
 
@@ -185,6 +158,56 @@
   {% endfor %}
   </tbody>
 </table>
+
+<!-- Create Client Modal -->
+<div class="modal fade" id="createClientModal" tabindex="-1" aria-labelledby="createClientModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createClientModalLabel">Create New Client</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{{ url_for('clients_create') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Client Name</label>
+              <input name="name" class="form-control" placeholder="Enter client name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Contact Email</label>
+              <input name="contact" type="email" class="form-control" placeholder="client@email.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone Number</label>
+              <input name="phone" class="form-control" placeholder="555-1234">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Street Address</label>
+              <input name="street" class="form-control" placeholder="123 Main St">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">City</label>
+              <input name="city" class="form-control" placeholder="City">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">State</label>
+              <input name="state" class="form-control" placeholder="NJ" maxlength="2">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">ZIP Code</label>
+              <input name="zip" class="form-control" placeholder="08401">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Create Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <style>
   .clickable-row {
