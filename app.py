@@ -148,11 +148,11 @@ class Activity(db.Model):
 #  changes: New Notification model for client-to-employee communication
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
-    message = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    message = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+    is_read = db.Column(db.Boolean, default=False, nullable=True)
     
     sender = db.relationship('User', backref='sent_notifications')
     project = db.relationship('Project', backref='notifications')
