@@ -11,7 +11,7 @@
       <input 
         name="q" 
         class="form-control" 
-        placeholder="Search by name, street, city, state, or ZIP..." 
+        placeholder="Search by name, street, city, or state..." 
         value="{{ search_query or '' }}"
       >
     </div>
@@ -52,10 +52,7 @@
       <label class="form-label">State</label>
       <input class="form-control" name="state">
     </div>
-    <div class="col-md-1">
-      <label class="form-label">ZIP</label>
-      <input class="form-control" name="zip">
-    </div>
+    
   </div>
   <div class="mt-2">
     <label class="form-label">Notes</label>
@@ -73,7 +70,7 @@
     {% for b in buildings %}
     <tr>
       <td><strong>{{ b.name }}</strong></td>
-      <td>{{ b.street }}, {{ b.city }} {{ b.state }} {{ b.zip }}</td>
+      <td>{{ b.street }}, {{ b.city }} {{ b.state }}</td>
       <td class="text-truncate" style="max-width: 300px;">{{ b.notes }}</td>
       <td class="text-end">
         <button class="btn btn-sm btn-outline-primary" type="button"
@@ -93,7 +90,7 @@
             <div class="col-md-4"><input class="form-control" name="street" value="{{ b.street or '' }}"></div>
             <div class="col-md-2"><input class="form-control" name="city" value="{{ b.city or '' }}"></div>
             <div class="col-md-1"><input class="form-control" name="state" value="{{ b.state or '' }}"></div>
-            <div class="col-md-1"><input class="form-control" name="zip" value="{{ b.zip or '' }}"></div>
+            
           </div>
           <div class="mt-2">
             <textarea class="form-control" name="notes" rows="2">{{ b.notes or '' }}</textarea>

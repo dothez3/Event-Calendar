@@ -82,13 +82,7 @@
         <i class="bi bi-pencil"></i> Edit Project
       </button>
     {% endif %}
-    {% if project.status == "In Progress" %}
-      <span class="badge bg-success" style="font-size: 1.1rem; padding: 10px 20px;">{{ project.status }}</span>
-    {% elif project.status == "Done" %}
-      <span class="badge bg-primary" style="font-size: 1.1rem; padding: 10px 20px;">{{ project.status }}</span>
-    {% else %}
-      <span class="badge bg-secondary" style="font-size: 1.1rem; padding: 10px 20px;">{{ project.status }}</span>
-    {% endif %}
+    
   </div>
 </div>
 
@@ -133,7 +127,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-12">
+        <div class="col-md-6>
           <label class="form-label">Description</label>
           <textarea name="description" class="form-control" rows="3">{{ project.description or '' }}</textarea>
         </div>
@@ -258,6 +252,54 @@
     <p class="mt-2 mb-0">{{ project.description }}</p>
   </div>
   {% endif %}
+
+
+
+
+
+
+
+
+  <div class="col-md-6">
+  <label class="form-label">Time Information</label>
+  <div class="card p-2">
+    <h6>Total Hours Spent: {{ total_hours }}</h6>
+    <h6>Time Entries</h6>
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Hours</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in time_entries %}
+        <tr>
+          <td>{{ entry.user.name }}</td>
+          <td>{{ entry.hours }}</td>
+          <td>{{ entry.timestamp.strftime("%Y-%m-%d") }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3">No time entries</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
 </div>
 
 <!-- Tabs for Events and Assigned Users -->
