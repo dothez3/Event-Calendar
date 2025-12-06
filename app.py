@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_migrate import Migrate
 import os
 from datetime import date, datetime
 
@@ -25,6 +26,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "index"
+migrate = Migrate(app, db)
 
 #Models
 class User(UserMixin, db.Model):
@@ -63,6 +65,7 @@ class Building(db.Model):
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     client_id = db.Column(db.Integer, db.ForeignKey("client.id"))
     building_id = db.Column(db.Integer, db.ForeignKey("building.id"))  # NEW
     description = db.Column(db.Text)
@@ -1128,6 +1131,132 @@ def timecard():
     return render_template('timecard.html', projects=projects)
 
 
+
+
+# Add this to your app.py file
+
+from datetime import date, timedelta
+
+@app.route("/reports")
+@login_required
+@employee_required  # Only employees can view reports
+def reports():
+    """Project analytics and reporting dashboard"""
+    
+    # Get all projects with related data
+    projects = Project.query.all()
+    
+    # Prepare data for frontend
+    project_data = []
+    for p in projects:
+        # Calculate project age
+        if p.created_at:  # If you have a created_at field
+            age_days = (date.today() - p.created_at.date()).days
+        else:
+            # Fallback: estimate from first activity or use a default
+            first_activity = Activity.query.filter_by(project_id=p.id).order_by(Activity.happened_at).first()
+            if first_activity:
+                age_days = (datetime.now().date() - first_activity.happened_at.date()).days
+            else:
+                age_days = 0
+        
+        # Calculate total hours logged
+        total_hours = db.session.query(func.sum(TimeEntry.hours)).filter(
+            TimeEntry.project_id == p.id
+        ).scalar() or 0
+        
+        project_data.append({
+            'id': p.id,
+            'name': p.name,
+            'status': p.status,
+            'client': p.client.name if p.client else 'No Client',
+            'dueDate': p.due_date.isoformat() if p.due_date else None,
+            'ageDays': age_days,
+            'hoursLogged': float(total_hours),
+            'description': p.description or ''
+        })
+    
+    # Calculate summary statistics
+    total_projects = len(project_data)
+    in_progress = len([p for p in project_data if p['status'] == 'In Progress'])
+    total_hours = sum(p['hoursLogged'] for p in project_data)
+    avg_age = sum(p['ageDays'] for p in project_data) / total_projects if total_projects > 0 else 0
+    
+    stats = {
+        'totalProjects': total_projects,
+        'inProgress': in_progress,
+        'totalHours': total_hours,
+        'avgAge': round(avg_age)
+    }
+    
+    return render_template(
+        'reports.html',
+        project_data=project_data,
+        stats=stats
+    )
+
+
+# OPTIONAL: Add API endpoint for dynamic data loading
+@app.route("/api/reports/data")
+@login_required
+@employee_required
+def reports_data():
+    """API endpoint to get fresh report data without page reload"""
+    import json
+    from flask import jsonify
+    
+    status_filter = request.args.get('status', 'all')
+    
+    # Build query
+    query = Project.query
+    if status_filter != 'all':
+        query = query.filter(Project.status == status_filter)
+    
+    projects = query.all()
+    
+    # Prepare data
+    project_data = []
+    for p in projects:
+        # Calculate age
+        first_activity = Activity.query.filter_by(project_id=p.id).order_by(Activity.happened_at).first()
+        if first_activity:
+            age_days = (datetime.now().date() - first_activity.happened_at.date()).days
+        else:
+            age_days = 0
+        
+        # Get hours
+        total_hours = db.session.query(func.sum(TimeEntry.hours)).filter(
+            TimeEntry.project_id == p.id
+        ).scalar() or 0
+        
+        project_data.append({
+            'id': p.id,
+            'name': p.name,
+            'status': p.status,
+            'client': p.client.name if p.client else 'No Client',
+            'dueDate': p.due_date.isoformat() if p.due_date else None,
+            'ageDays': age_days,
+            'hoursLogged': float(total_hours)
+        })
+    
+    return jsonify(project_data)
+
+
+# RECOMMENDED: Add a created_at field to Project model for accurate age calculation
+# Add this to your Project model:
+"""
+class Project(db.Model):
+    # ... existing fields ...
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # ... rest of model ...
+"""
+
+# Then run migration:
+"""
+flask db init  # if not already done
+flask db migrate -m "Add created_at to Project"
+flask db upgrade
+"""
 
 
 
