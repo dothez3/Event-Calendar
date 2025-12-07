@@ -745,9 +745,9 @@ def project_detail(id):
     total_events = len(events)
     upcoming_events = len([e for e in events if e.start > datetime.now()])
     
-    # Days until due date
+    # Days until due date - ONLY calculate if project is NOT done
     days_until_due = None
-    if project.due_date:
+    if project.due_date and project.status != "Done":
         delta = project.due_date - datetime.now().date()
         days_until_due = delta.days
     
@@ -760,12 +760,6 @@ def project_detail(id):
 
     time_entries = TimeEntry.query.filter_by(project_id=id).all()
     total_hours = sum(entry.hours for entry in time_entries)
-
-   
-
-
-
-
     
     return render_template("project_detail.html",
                          project=project,

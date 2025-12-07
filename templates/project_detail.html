@@ -177,15 +177,34 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="stat-card {% if stats.days_until_due and stats.days_until_due < 7 %}bg-danger{% else %}text-white{% endif %}" {% if not (stats.days_until_due and stats.days_until_due < 7) %}style="background-color: #0891b2;"{% endif %}>
+    <!-- Only show red/warning if NOT done -->
+    <div class="stat-card 
+      {% if project.status == 'Done' %}
+        bg-success
+      {% elif stats.days_until_due is not none and stats.days_until_due < 7 %}
+        bg-danger
+      {% else %}
+        text-white
+      {% endif %}" 
+      {% if project.status != 'Done' and not (stats.days_until_due is not none and stats.days_until_due < 7) %}
+        style="background-color: #0891b2;"
+      {% endif %}>
       <p class="stat-number">
-        {% if stats.days_until_due is not none %}
+        {% if project.status == 'Done' %}
+          <i class="bi bi-check-circle"></i>
+        {% elif stats.days_until_due is not none %}
           {{ stats.days_until_due }}
         {% else %}
           -
         {% endif %}
       </p>
-      <p class="stat-label text-white">Days Until Due</p>
+      <p class="stat-label text-white">
+        {% if project.status == 'Done' %}
+          Completed
+        {% else %}
+          Days Until Due
+        {% endif %}
+      </p>
     </div>
   </div>
   <div class="col-md-3">
@@ -238,10 +257,12 @@
       <div class="info-row">
         <span class="info-label"><i class="bi bi-calendar"></i> Due Date:</span>
         {% if project.due_date %}
-          <span {% if (stats.days_until_due is not none and stats.days_until_due < 0) or project.status == 'Overdue' %}style="color: red; font-weight: bold;"{% endif %}>
+          <!-- Only show red/warning if NOT done -->
+          <span {% if project.status != 'Done' and ((stats.days_until_due is not none and stats.days_until_due < 0) or project.status == 'Overdue') %}style="color: red; font-weight: bold;"{% endif %}>
             {{ project.due_date.strftime('%B %d, %Y') }}
           </span>
-          {% if stats.days_until_due is not none %}
+          <!-- Only show badges if project is NOT done -->
+          {% if project.status != 'Done' and stats.days_until_due is not none %}
             {% if stats.days_until_due < 0 %}
               <span class="badge bg-danger ms-2">Overdue</span>
             {% elif stats.days_until_due < 7 %}

@@ -1,21 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Register</h2>
-<form method="post" class="row g-3" autocomplete="off">
-  <div class="col-md-6">
-    <label class="form-label">Name</label>
-    <input name="name" class="form-control" required>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+  <div class="border rounded p-4 shadow" style="width: 320px; background-color: #f8f9fa;">
+    <h3 class="text-center mb-4">Create Account</h3>
+    <form method="post" autocomplete="off">
+      <div class="mb-3">
+        <input name="name" type="text" class="form-control" placeholder="Full Name" required>
+      </div>
+      <div class="mb-3">
+        <input name="email" type="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="mb-3">
+        <input name="password" type="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="d-grid mb-3">
+        <button class="btn btn-primary" type="submit">Create Account</button>
+      </div>
+    </form>
+    <!-- Link back to login -->
+    <div class="text-center">
+      <a href="{{ url_for('index') }}" class="text-decoration-none">Already have an account? Login</a>
+    </div>
   </div>
-  <div class="col-md-6">
-    <label class="form-label">Email</label>
-    <input name="email" type="email" class="form-control" required>
-  </div>
-  <div class="col-md-6">
-    <label class="form-label">Password</label>
-    <input name="password" type="password" class="form-control" required>
-  </div>
-  <div class="col-12">
-    <button class="btn btn-success">Create account</button>
-  </div>
-</form>
+</div>
 {% endblock %}
