@@ -148,13 +148,20 @@ class Activity(db.Model):
 #  changes: New Notification model for client-to-employee communication
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # None = broadcast to all employees, non-null = direct to one employee
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
-    message = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
-    is_read = db.Column(db.Boolean, default=False, nullable=True)
-    
-    sender = db.relationship('User', backref='sent_notifications')
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+
+    sender = db.relationship('User',
+                             foreign_keys=[sender_id],
+                             backref='sent_notifications')
+    recipient = db.relationship('User',
+                                foreign_keys=[recipient_id],
+                                backref='received_notifications')
     project = db.relationship('Project', backref='notifications')
 
 #CLI to init DB
@@ -995,39 +1002,77 @@ def unassign_client_from_project(project_id, user_id):
 #  changes: Notification Routes for client-to-employee communication
 @app.route("/notifications")
 @login_required
-@employee_required  #  changes: Only employees can view notifications
+@employee_required
 def notifications():
-    """View all notifications from clients (employee only)"""
-    #  changes: Get all notifications, ordered by newest first
-    all_notifications = Notification.query.order_by(Notification.created_at.desc()).all()
-    
-    #  changes: Count unread notifications
-    unread_count = Notification.query.filter_by(is_read=False).count()
-    
-    return render_template("notifications.html", 
-                         notifications=all_notifications, 
-                         unread_count=unread_count)
+    """Inbox for employees: broadcast client messages + direct employee messages"""
+
+    base_query = Notification.query.filter(
+        or_(
+            Notification.recipient_id == current_user.id,   # direct to me
+            Notification.recipient_id.is_(None)             # broadcast
+        )
+    )
+
+    notifications = base_query.order_by(Notification.created_at.desc()).all()
+    unread_count = base_query.filter_by(is_read=False).count()
+
+    # list of employees for the "send to employee" dropdown
+    employees = User.query.filter_by(role="employee").order_by(User.name).all()
+
+    return render_template(
+        "notifications.html",
+        notifications=notifications,
+        unread_count=unread_count,
+        employees=employees,
+    )
+
+@app.route("/notifications/send", methods=["POST"])
+@login_required
+@employee_required
+def notifications_send():
+    """Send an internal message from one employee to another"""
+    recipient_id = request.form.get("recipient_id")
+    message = request.form.get("message", "").strip()
+    project_id = request.form.get("project_id")  # optional hidden field, can stay empty
+
+    if not recipient_id or not message:
+        flash("Recipient and message are required.", "warning")
+        return redirect(url_for("notifications"))
+
+    n = Notification(
+        sender_id=current_user.id,
+        recipient_id=int(recipient_id),
+        project_id=int(project_id) if project_id else None,
+        message=message,
+        is_read=False,
+    )
+
+    db.session.add(n)
+    db.session.commit()
+    flash("Message sent to employee.", "success")
+    return redirect(url_for("notifications"))
 
 @app.route("/notifications/create", methods=["POST"])
-@login_required  #  changes: Both clients and employees can create notifications
+@login_required
 def notifications_create():
-    """Create a new notification (clients send to employees)"""
+    """Create a new notification (clients send broadcast to all employees)"""
     message = request.form.get("message", "").strip()
     project_id = request.form.get("project_id")
-    
+
     if not message:
         flash("Message cannot be empty.", "warning")
         return redirect(request.referrer or url_for("dashboard"))
-    
-    #  changes: Create notification
+
     notification = Notification(
         sender_id=current_user.id,
+        recipient_id=None,  # broadcast to all employees
         project_id=int(project_id) if project_id else None,
-        message=message
+        message=message,
+        is_read=False,
     )
     db.session.add(notification)
     db.session.commit()
-    
+
     flash("Notification sent successfully!", "success")
     return redirect(request.referrer or url_for("dashboard"))
 
@@ -1054,19 +1099,34 @@ def notification_delete(notification_id):
 
 @app.route("/notifications/mark-all-read", methods=["POST"])
 @login_required
-@employee_required  #  changes: Only employees can mark all as read
+@employee_required
 def notifications_mark_all_read():
-    """Mark all notifications as read"""
-    Notification.query.update({Notification.is_read: True})
+    """Mark all notifications in THIS employee's inbox as read"""
+    Notification.query.filter(
+        Notification.is_read == False,
+        or_(
+            Notification.recipient_id == None,               # broadcasts
+            Notification.recipient_id == current_user.id     # direct to this employee
+        )
+    ).update({Notification.is_read: True}, synchronize_session=False)
+
     db.session.commit()
-    flash("All notifications marked as read.", "success")
+    flash("All your notifications marked as read.", "success")
     return redirect(url_for("notifications"))
 
 
 def unread_notification_count():
-    if not current_user.is_authenticated:
+    if not current_user.is_authenticated or current_user.role != 'employee':
         return 0
-    return Notification.query.filter_by(is_read=False).count()
+
+    return Notification.query.filter(
+        Notification.is_read == False,
+        or_(
+            Notification.recipient_id == None,
+            Notification.recipient_id == current_user.id
+        )
+    ).count()
+
 @app.context_processor
 def inject_notification_count():
     return {
