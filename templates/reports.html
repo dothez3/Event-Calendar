@@ -3,7 +3,9 @@
 {% block title %}Reports & Analytics{% endblock %}
 
 {% block content %}
+
 <div class="container-fluid py-4">
+
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
@@ -135,7 +137,9 @@
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 id="chartTitle" class="mb-4">Project Status Distribution</h5>
-                    <canvas id="reportChart" height="100"></canvas>
+                    <div style="position: relative; height: 400px; max-height: 400px;">
+                        <canvas id="reportChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -331,7 +335,7 @@ function updateChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: type === 'pie'
@@ -367,4 +371,5 @@ function exportReport() {
     window.URL.revokeObjectURL(url);
 }
 </script>
+
 {% endblock %}
