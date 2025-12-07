@@ -88,6 +88,11 @@
         </div>
 
         <!-- Actions -->
+          <div class="d-flex justify-content-end gap-2">
+          <a href="{{ url_for('notification_detail', notification_id=n.id) }}"
+             class="btn btn-sm btn-outline-primary">
+            View
+          </a>
         <div class="d-flex justify-content-end gap-2">
           <form method="post"
                 action="{{ url_for('notification_delete', notification_id=n.id) }}">
