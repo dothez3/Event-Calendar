@@ -1,35 +1,8 @@
-<!--  changes: New notifications page for employees to view client messages -->
 {% extends "base.html" %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0">Notifications from Clients</h2>
-
-  <div class="d-flex align-items-center gap-2">
-    {% if unread_count > 0 %}
-      <span class="btn btn-sm btn-unread-count">
-        {{ unread_count }} Unread
-      </span>
-    {% else %}
-      <span class="btn btn-sm btn-unread-count disabled">
-        0 Unread
-      </span>
-    {% endif %}
-
-    <form method="post" action="{{ url_for('notifications_mark_all_read') }}" class="d-inline">
-      <button type="submit" class="btn btn-sm btn-outline-primary">
-        Mark All as Read
-      </button>
-    </form>
-</div>
-</div>
-
-<!--  changes: List of notifications with sender, project, and message details -->
-{% extends "base.html" %}
-{% block content %}
-
-<!-- Header with unread count and Mark All as Read -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0">Notifications from Clients</h2>
+  <h2 class="mb-0">Notifications</h2>
 
   <div class="d-flex align-items-center gap-2">
     {% if unread_count > 0 %}
@@ -50,16 +23,49 @@
   </div>
 </div>
 
-<!-- Notifications as fixed size cards -->
+<!-- Send message to another employee -->
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Send message to an employee</h5>
+    <form method="post" action="{{ url_for('notifications_send') }}" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Recipient</label>
+        <select class="form-select" name="recipient_id" required>
+          <option value="">Select employee…</option>
+          {% for emp in employees %}
+            {% if emp.id != current_user.id %}
+              <option value="{{ emp.id }}">{{ emp.name }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-7">
+        <label class="form-label">Message</label>
+        <textarea class="form-control" name="message" rows="1" required></textarea>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary mt-md-4">Send</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% if notifications %}
   <div class="notif-grid">
     {% for n in notifications %}
       <div class="notif-card {% if not n.is_read %}notif-card-unread{% endif %}">
 
-        <!-- From, project, date -->
+        <!-- From / to / project / date -->
         <div class="mb-2">
           <div class="fw-semibold">
             From {{ n.sender.name }}
+            {% if n.recipient_id %}
+              · To {{ n.recipient.name }}
+            {% else %}
+              · To all employees
+            {% endif %}
           </div>
 
           {% if n.project %}
@@ -71,7 +77,7 @@
           </div>
         </div>
 
-        <!-- Message text (will be cut off by CSS) -->
+        <!-- Message text (truncated by CSS) -->
         <p class="notif-message mb-3">
           {{ n.message }}
         </p>
