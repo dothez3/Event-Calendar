@@ -1114,6 +1114,24 @@ def notifications_mark_all_read():
     flash("All your notifications marked as read.", "success")
     return redirect(url_for("notifications"))
 
+@app.route("/notifications/<int:notification_id>")
+@login_required
+@employee_required
+def notification_detail(notification_id):
+    """Show one notification with the full message"""
+    n = Notification.query.get_or_404(notification_id)
+
+    # Permission check
+    if n.recipient_id is not None and n.recipient_id != current_user.id:
+        flash("Access denied for this notification.", "danger")
+        return redirect(url_for("notifications"))
+
+    # Mark as read when opened
+    if not n.is_read:
+        n.is_read = True
+        db.session.commit()
+
+    return render_template("notification_detail.html", notification=n)
 
 def unread_notification_count():
     if not current_user.is_authenticated or current_user.role != 'employee':
