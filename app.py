@@ -226,6 +226,7 @@ def init_db():
 from sqlalchemy import or_, func, desc  # add this import at the top
 
 #Routes
+# Made client_login the default login page for all users
 @app.route("/", methods=["GET", "POST"])
 def index():
     if current_user.is_authenticated:
@@ -252,34 +253,7 @@ def index():
 
         flash("Invalid credentials", "danger")
     
-    return render_template("login.html")
-
-@app.route("/client-login", methods=["GET", "POST"])
-def client_login():
-    if current_user.is_authenticated:
-        return redirect(url_for("dashboard"))
-    
-    if request.method == "POST":
-        identifier = request.form["email"].strip()
-        password   = request.form["password"]
-
-        # normalize once for case-insensitive name match
-        ident_lower = identifier.lower()
-
-        # Try exact email match OR case-insensitive name match
-        user = User.query.filter(
-            or_(
-                User.email == ident_lower,
-                func.lower(User.name) == ident_lower
-            )
-        ).first()
-
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for("dashboard"))
-
-        flash("Invalid credentials", "danger")
-    
+    #client_login template as the unified login page
     return render_template("client_login.html")
 
 @app.route("/register", methods=["GET", "POST"])
@@ -303,12 +277,9 @@ def register():
         db.session.add(u)
         db.session.commit()
         
-        if role == 'employee':
-            flash("Registered as employee! Please login.", "success")
-            return redirect(url_for("index"))
-        else:
-            flash("Registered as client! Please login.", "success")
-            return redirect(url_for("client_login"))
+        # Unified registration redirect to single login page
+        flash("Registration successful! Please login.", "success")
+        return redirect(url_for("index"))
     
     return render_template("register.html", account_type=account_type)
 
