@@ -2,76 +2,106 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <!--  changes: Page header with unread count -->
-  <h2>Notifications from Clients</h2>
-  <!--  changes: Unread count badge and mark all as read button -->
-  <div>
+  <h2 class="mb-0">Notifications from Clients</h2>
+
+  <div class="d-flex align-items-center gap-2">
     {% if unread_count > 0 %}
-    <span class="badge bg-danger me-2">{{ unread_count }} Unread</span>
-    <form method="post" action="{{ url_for('notifications_mark_all_read') }}" class="d-inline">
-      <button type="submit" class="btn btn-sm btn-outline-primary">Mark All as Read</button>
-    </form>
+      <span class="btn btn-sm btn-unread-count">
+        {{ unread_count }} Unread
+      </span>
     {% else %}
-    <span class="badge bg-success">All Caught Up!</span>
+      <span class="btn btn-sm btn-unread-count disabled">
+        0 Unread
+      </span>
     {% endif %}
-  </div>
+
+    <form method="post" action="{{ url_for('notifications_mark_all_read') }}" class="d-inline">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        Mark All as Read
+      </button>
+    </form>
+</div>
 </div>
 
 <!--  changes: List of notifications with sender, project, and message details -->
-{% if notifications %}
-<div class="list-group">
-  {% for n in notifications %}
-  <!--  changes: Highlight unread notifications -->
-  <div class="list-group-item {% if not n.is_read %}list-group-item-primary{% endif %}">
-    <div class="d-flex w-100 justify-content-between align-items-start">
-      <div class="flex-grow-1">
-        <div class="d-flex align-items-center mb-2">
-          <h5 class="mb-0 me-2">
-            {% if not n.is_read %}
-            <span class="badge bg-danger me-2">New</span>
-            {% endif %}
-            {{ n.sender.name }}
-          </h5>
-          <small class="text-muted">{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-        </div>
-        
-        {% if n.project %}
-        <p class="mb-2">
-          <strong>Project:</strong> 
-          <a href="{{ url_for('project_detail', id=n.project.id) }}">{{ n.project.name }}</a>
-        </p>
-        {% endif %}
-        
-        <p class="mb-0">{{ n.message }}</p>
-      </div>
-      
-      <!--  changes: Action buttons for mark as read and delete -->
-      <div class="ms-3">
-        <div class="btn-group-vertical" role="group">
-          {% if not n.is_read %}
-          <form method="post" action="{{ url_for('notification_mark_read', notification_id=n.id) }}" class="mb-1">
-            <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as read">
-              <i class="bi bi-check2"></i> Read
-            </button>
-          </form>
-          {% endif %}
-          <form method="post" action="{{ url_for('notification_delete', notification_id=n.id) }}">
-            <button type="submit" class="btn btn-sm btn-outline-danger" 
-                    onclick="return confirm('Delete this notification?')" title="Delete">
-              <i class="bi bi-trash"></i> Delete
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header with unread count and Mark All as Read -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Notifications from Clients</h2>
+
+  <div class="d-flex align-items-center gap-2">
+    {% if unread_count > 0 %}
+      <span class="btn btn-sm btn-unread-count">
+        {{ unread_count }} Unread
+      </span>
+    {% else %}
+      <span class="btn btn-sm btn-unread-count disabled">
+        0 Unread
+      </span>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('notifications_mark_all_read') }}" class="d-inline">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        Mark All as Read
+      </button>
+    </form>
   </div>
-  {% endfor %}
 </div>
+
+<!-- Notifications as fixed size cards -->
+{% if notifications %}
+  <div class="notif-grid">
+    {% for n in notifications %}
+      <div class="notif-card {% if not n.is_read %}notif-card-unread{% endif %}">
+
+        <!-- From, project, date -->
+        <div class="mb-2">
+          <div class="fw-semibold">
+            From {{ n.sender.name }}
+          </div>
+
+          {% if n.project %}
+            <div>Project {{ n.project.name }}</div>
+          {% endif %}
+
+          <div class="small text-muted">
+            {{ n.created_at.strftime('%m/%d/%Y') }}
+          </div>
+        </div>
+
+        <!-- Message text (will be cut off by CSS) -->
+        <p class="notif-message mb-3">
+          {{ n.message }}
+        </p>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-2">
+          {% if not n.is_read %}
+            <form method="post"
+                  action="{{ url_for('notification_mark_read', notification_id=n.id) }}">
+              <button type="submit" class="btn btn-sm btn-outline-success">
+                Read
+              </button>
+            </form>
+          {% endif %}
+          <form method="post"
+                action="{{ url_for('notification_delete', notification_id=n.id) }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Delete this notification?')">
+              Delete
+            </button>
+          </form>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
 {% else %}
-<!--  changes: Empty state message when no notifications exist -->
-<div class="alert alert-info">
-  <i class="bi bi-info-circle"></i> No notifications yet.
-</div>
+  <div class="alert alert-info">
+    No notifications yet.
+  </div>
 {% endif %}
 
 {% endblock %}

@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -6,8 +7,74 @@
     <title>CFD Architect LLC</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-  :root { --sidebar-w: 240px; }
+   .notif-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.4rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background-color: #dc2626; /* red */
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+   .btn-unread-count {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border-radius: 999px !important;
+    border: none !important;
+    font-weight: 600;
+    padding: 0.25rem 0.9rem;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Notification card grid layout */
+.notif-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* Individual notification card */
+.notif-card {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 1rem;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+/* Highlight unread cards */
+.notif-card-unread {
+  background: #e0f2fe; /* light blue highlight */
+  border-color: #0284c7; /* blue border */
+}
+
+/* Cut long messages */
+.notif-message {
+  font-size: 0.9rem;
+  line-height: 1.3rem;
+  color: #374151;
+  max-height: 3.9rem; /* shows about 3 lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; 
+  -webkit-box-orient: vertical;
+}
+ :root { --sidebar-w: 240px; }
   body { min-height: 100vh; }
+  /* Fixed sidebar layout to keep logout button at bottom */
   .sidebar {
     position: fixed; top: 0; left: 0; bottom: 0;
     width: var(--sidebar-w);
@@ -15,6 +82,12 @@
     color: #f9fafb;
     padding: 1rem;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Hide sidebar when user is not authenticated */
+  .sidebar.hide-sidebar {
+    display: none;
   }
   .sidebar a { color: #e5e7eb; text-decoration: none; }
   .sidebar a.active, .sidebar a:hover { color: #ffffff; }
@@ -24,14 +97,30 @@
     padding: .5rem .75rem;
     margin-bottom: .25rem;
   }
+  /*Navigation takes remaining space, pushing button to bottom */
+  .nav-vertical {
+    flex: 1;
+  }
   .app-content {
     margin-left: var(--sidebar-w);
     padding: 1.25rem;
   }
+  /*Remove left margin when sidebar is hidden */
+  .app-content.full-width {
+    margin-left: 0;
+  }
+  /*Auto-dismiss alert animation */
+  .alert {
+    transition: opacity 0.5s ease-out;
+  }
+  .alert.fade-out {
+    opacity: 0;
+  }
 </style>
   </head>
   <body>
- <aside class="sidebar">
+ <!-- Hide sidebar on login page -->
+ <aside class="sidebar {% if not current_user.is_authenticated %}hide-sidebar{% endif %}">
   <div class="mb-3">
     <a class="brand h5 mb-0 d-block"
        href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('index') }}">
@@ -59,12 +148,13 @@
 
 
 
-        <a href="{{ url_for('notifications') }}"
-          class="nav-link {% if unread_notifications > 0 %}color: red{% else %}btn-secondary{% endif %}">
-            Notifications
-            {% if unread_notifications > 0 %}
-              <span class="badge bg-light text-dark">{{ unread_notifications }}</span>
-            {% endif %}
+        <!-- Notifications link for employees -->
+        <a class="nav-link {% if request.endpoint=='notifications' %}active{% endif %}"
+           href="{{ url_for('notifications') }}">
+          Notifications
+          {% if unread_notifications and unread_notifications > 0 %}
+            <span class="notif-badge">{{ unread_notifications }}</span>
+          {% endif %}
         </a>
 
 
@@ -101,20 +191,24 @@
       {% endif %}
     {% endif %}
   </nav>
+  <!--Only show logout button when authenticated -->
   <div class="d-grid gap-2">
     {% if current_user.is_authenticated %}
       <a class="btn btn-sm btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
-    {% else %}
-      <a class="btn btn-sm btn-light" href="{{ url_for('index') }}">Login</a>
     {% endif %}
   </div>
 </aside>
-  <main class="app-content">
+  <!--Full-width content when sidebar is hidden -->
+  <main class="app-content {% if not current_user.is_authenticated %}full-width{% endif %}">
+    <!-- Auto-dismissible flash messages -->
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
-        <div class="mb-3">
+        <div class="mb-3" id="flash-messages">
           {% for category, msg in messages %}
-            <div class="alert alert-{{ category }}">{{ msg }}</div>
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ msg }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
           {% endfor %}
         </div>
       {% endif %}
@@ -125,5 +219,23 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- FullCalendar JS -->
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+  
+  <!--Auto-dismiss flash messages after 4 seconds -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const alerts = document.querySelectorAll('.alert');
+      alerts.forEach(function(alert) {
+        setTimeout(function() {
+          // Add fade-out class
+          alert.classList.add('fade-out');
+          // Remove element after animation completes
+          setTimeout(function() {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+          }, 500);
+        }, 4000); // Show for 4 seconds before fading
+      });
+    });
+  </script>
   </body>
 </html>
