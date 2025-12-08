@@ -55,40 +55,41 @@
 {% if notifications %}
   <div class="notif-grid">
     {% for n in notifications %}
-      <div class="notif-card {% if not n.is_read %}notif-card-unread{% endif %}"
-           data-notif-message="{{ n.message|e }}">
+      <div class="notif-card {% if not n.is_read %}notif-card-unread{% endif %}">
 
-        <!-- Clickable area (now opens modal, not a broken link) -->
-        <div class="notif-card-link" style="cursor:pointer;">
-
-          <!-- From / to / project / date -->
-          <div class="mb-2">
-            <div class="fw-semibold">
-              From {{ n.sender.name }}
-              {% if n.recipient_id %}
-                · To {{ n.recipient.name }}
-              {% else %}
-                · To all employees
-              {% endif %}
-            </div>
-
-            {% if n.project %}
-              <div>Project {{ n.project.name }}</div>
+        <!-- Card content -->
+        <div class="mb-2">
+          <div class="fw-semibold">
+            From {{ n.sender.name }}
+            {% if n.recipient_id %}
+              · To {{ n.recipient.name }}
+            {% else %}
+              · To all employees
             {% endif %}
-
-            <div class="small text-muted">
-              {{ n.created_at.strftime('%m/%d/%Y') }}
-            </div>
           </div>
 
-          <!-- Message text (truncated inside card) -->
-          <p class="notif-message mb-3">
-            {{ n.message }}
-          </p>
+          {% if n.project %}
+            <div>Project {{ n.project.name }}</div>
+          {% endif %}
+
+          <div class="small text-muted">
+            {{ n.created_at.strftime('%m/%d/%Y') }}
+          </div>
         </div>
+
+        <!-- Truncated preview text -->
+        <p class="notif-message mb-3">
+          {{ n.message }}
+        </p>
 
         <!-- Actions -->
         <div class="d-flex justify-content-end gap-2">
+          <!-- View goes to a separate page -->
+          <a href="{{ url_for('notification_detail', notification_id=n.id) }}"
+             class="btn btn-sm btn-outline-primary">
+            View
+          </a>
+
           <form method="post"
                 action="{{ url_for('notification_delete', notification_id=n.id) }}">
             <button type="submit" class="btn btn-sm btn-outline-danger"

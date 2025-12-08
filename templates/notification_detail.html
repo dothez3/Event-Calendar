@@ -1,52 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="max-width: 700px;">
+<div class="container-fluid" style="max-width: 720px;">
+  <h2 class="mb-4">Notification</h2>
 
-  <h2 class="mb-3">Message Detail</h2>
-
-  <div class="card shadow-sm">
+  <div class="card mb-3">
     <div class="card-body">
-
-      <h5 class="mb-2">
-        From {{ notification.sender.name }}
+      <div class="mb-2">
+        <strong>From:</strong> {{ notification.sender.name }}<br>
         {% if notification.recipient_id %}
-          · To {{ notification.recipient.name }}
+          <strong>To:</strong> {{ notification.recipient.name }}<br>
         {% else %}
-          · To all employees
+          <strong>To:</strong> All employees<br>
         {% endif %}
-      </h5>
-
-      {% if notification.project %}
-        <p class="mb-2">
-          <strong>Project:</strong> {{ notification.project.name }}
-        </p>
-      {% endif %}
-
-      <p class="small text-muted mb-3">
-        Sent on {{ notification.created_at.strftime('%m/%d/%Y %I:%M %p') }}
-      </p>
+        {% if notification.project %}
+          <strong>Project:</strong> {{ notification.project.name }}<br>
+        {% endif %}
+        <strong>Date:</strong> {{ notification.created_at.strftime('%m/%d/%Y %I:%M %p') }}
+      </div>
 
       <hr>
 
-      <p style="white-space: pre-wrap; font-size: 1rem;">
-        {{ notification.message }}
-      </p>
-
-      <div class="mt-4">
-        <a href="{{ url_for('notifications') }}" class="btn btn-secondary">
-          Back to Notifications
-        </a>
-        <form method="post"
-              action="{{ url_for('notification_delete', notification_id=notification.id) }}"
-              class="d-inline">
-            <button class="btn btn-danger"
-                    onclick="return confirm('Delete this message?')">Delete</button>
-        </form>
-      </div>
-
+      <p style="white-space: pre-wrap;">{{ notification.message }}</p>
     </div>
   </div>
 
+  <a href="{{ url_for('notifications') }}" class="btn btn-secondary">
+    Back to Notifications
+  </a>
 </div>
 {% endblock %}
