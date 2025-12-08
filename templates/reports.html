@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="mb-2">Project Reports & Analytics</h1>
+                            <p class="text-muted mb-0">Visual insights and metrics for all projects</p>
+                        </div>
+                        <button onclick="exportReport()" class="btn btn-primary">
+                            <i class="bi bi-download"></i> Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Total Projects</p>
+                            <h3 class="mb-0">{{ stats.totalProjects }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-graph-up text-primary fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">In Progress</p>
+                            <h3 class="mb-0">{{ stats.inProgress }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-clock text-success fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Total Hours</p>
+                            <h3 class="mb-0">{{ stats.totalHours|round|int }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-calendar3 text-info fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Avg Project Age</p>
+                            <h3 class="mb-0">{{ stats.avgAge }}d</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-exclamation-circle text-warning fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="bi bi-funnel"></i> Report Controls
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Metric to Analyze</label>
+                            <select id="metricSelect" class="form-select">
+                                <option value="status">Project Status Distribution</option>
+                                <option value="age">Project Duration (Oldest First)</option>
+                                <option value="hours">Hours Logged by Project</option>
+                                <option value="client">Projects by Client</option>
+                                <option value="timeline">Projects Started Over Time</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Chart Type</label>
+                            <select id="chartTypeSelect" class="form-select">
+                                <option value="pie">Pie Chart</option>
+                                <option value="bar">Bar Chart</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Filter by Status</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="all">All Projects</option>
+                                <option value="In Progress">In Progress Only</option>
+                                <option value="Planned">Planned Only</option>
+                                <option value="Done">Completed Only</option>
+                                <option value="On Hold">On Hold Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Display -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 id="chartTitle" class="mb-4">Project Status Distribution</h5>
+                    <div style="position: relative; height: 400px; max-height: 400px;">
+                        <canvas id="reportChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">Project Details</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="projectTable">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Status</th>
+                                    <th>Client</th>
+                                    <th>Age (Days)</th>
+                                    <th>Hours Logged</th>
+                                    <th>Due Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in project_data %}
+                                <tr data-status="{{ project.status }}">
+                                    <td><a href="{{ url_for('project_detail', id=project.id) }}">{{ project.name }}</a></td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if project.status == 'In Progress' %}bg-primary
+                                            {% elif project.status == 'Planned' %}bg-success
+                                            {% elif project.status == 'Done' %}bg-secondary
+                                            {% else %}bg-warning{% endif %}">
+                                            {{ project.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ project.client }}</td>
+                                    <td>{{ project.ageDays }}</td>
+                                    <td>{{ project.hoursLogged|round(1) }}</td>
+                                    <td>{{ project.dueDate or 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+// Project data from backend
+const projectData = {{ project_data | tojson }};
+let currentChart = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateChart();
+    
+    // Add event listeners
+    document.getElementById('metricSelect').addEventListener('change', updateChart);
+    document.getElementById('chartTypeSelect').addEventListener('change', updateChart);
+    document.getElementById('statusFilter').addEventListener('change', filterProjects);
+});
+
+function filterProjects() {
+    const filter = document.getElementById('statusFilter').value;
+    const rows = document.querySelectorAll('#projectTable tbody tr');
+    
+    rows.forEach(row => {
+        if (filter === 'all' || row.dataset.status === filter) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    updateChart();
+}
+
+function getFilteredProjects() {
+    const filter = document.getElementById('statusFilter').value;
+    if (filter === 'all') return projectData;
+    return projectData.filter(p => p.status === filter);
+}
+
+function updateChart() {
+    const metric = document.getElementById('metricSelect').value;
+    const chartType = document.getElementById('chartTypeSelect').value;
+    const filteredData = getFilteredProjects();
+    
+    // Update title
+    const titles = {
+        'status': 'Project Status Distribution',
+        'age': 'Projects by Duration (Longest Running)',
+        'hours': 'Time Investment by Project',
+        'client': 'Project Distribution by Client',
+        'timeline': 'Project Start Timeline'
+    };
+    document.getElementById('chartTitle').textContent = titles[metric];
+    
+    // Show/hide chart type selector for timeline
+    if (metric === 'timeline') {
+        document.getElementById('chartTypeSelect').disabled = true;
+    } else {
+        document.getElementById('chartTypeSelect').disabled = false;
+    }
+    
+    // Prepare data based on metric
+    let chartData, labels, values, backgroundColor;
+    
+    switch(metric) {
+        case 'status':
+            const statusCounts = {};
+            filteredData.forEach(p => {
+                statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+            });
+            labels = Object.keys(statusCounts);
+            values = Object.values(statusCounts);
+            backgroundColor = labels.map(status => {
+                switch(status) {
+                    case 'In Progress': return '#0d6efd';
+                    case 'Planned': return '#198754';
+                    case 'Done': return '#6c757d';
+                    case 'On Hold': return '#ffc107';
+                    default: return '#6f42c1';
+                }
+            });
+            break;
+            
+        case 'age':
+            const sorted = [...filteredData].sort((a, b) => b.ageDays - a.ageDays).slice(0, 8);
+            labels = sorted.map(p => p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name);
+            values = sorted.map(p => p.ageDays);
+            backgroundColor = '#0d6efd';
+            break;
+            
+        case 'hours':
+            const byHours = [...filteredData].sort((a, b) => b.hoursLogged - a.hoursLogged).slice(0, 8);
+            labels = byHours.map(p => p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name);
+            values = byHours.map(p => p.hoursLogged);
+            backgroundColor = '#0d6efd';
+            break;
+            
+        case 'client':
+            const clientCounts = {};
+            filteredData.forEach(p => {
+                clientCounts[p.client] = (clientCounts[p.client] || 0) + 1;
+            });
+            labels = Object.keys(clientCounts);
+            values = Object.values(clientCounts);
+            backgroundColor = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14'];
+            break;
+            
+        case 'timeline':
+            // Group by month
+            const monthCounts = {};
+            filteredData.forEach(p => {
+                // Use ageDays to estimate start date (rough approximation)
+                const monthKey = 'Recent'; // Simplified for demo
+                monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+            });
+            labels = Object.keys(monthCounts);
+            values = Object.values(monthCounts);
+            backgroundColor = '#0d6efd';
+            break;
+    }
+    
+    // Destroy existing chart
+    if (currentChart) {
+        currentChart.destroy();
+    }
+    
+    // Create new chart
+    const ctx = document.getElementById('reportChart').getContext('2d');
+    const type = metric === 'timeline' ? 'line' : chartType;
+    
+    currentChart = new Chart(ctx, {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: metric === 'hours' ? 'Hours Logged' : metric === 'age' ? 'Days Active' : 'Count',
+                data: values,
+                backgroundColor: Array.isArray(backgroundColor) ? backgroundColor : backgroundColor,
+                borderColor: type === 'line' ? '#0d6efd' : undefined,
+                borderWidth: type === 'line' ? 2 : 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: type === 'pie'
+                }
+            },
+            scales: type === 'pie' ? {} : {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function exportReport() {
+    const filteredData = getFilteredProjects();
+    
+    // Create CSV
+    let csv = 'Project Name,Status,Client,Age (Days),Hours Logged,Due Date\n';
+    filteredData.forEach(p => {
+        csv += `"${p.name}","${p.status}","${p.client}",${p.ageDays},${p.hoursLogged},"${p.dueDate || 'N/A'}"\n`;
+    });
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'project-report-' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+</script>
+
+{% endblock %}
