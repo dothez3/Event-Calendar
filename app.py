@@ -9,7 +9,7 @@ from datetime import date, datetime
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key")
 
-#Leave this commented for now
+#Leave this commented for now  afk
 #app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///pms_demo.db"
 
 #This is to make sure either database works, sql lite or MySQL
