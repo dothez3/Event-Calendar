@@ -14,7 +14,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key")
 #This is to make sure either database works, sql lite or MySQL
 import os
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv (
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "DATABASE_URL",
     f"sqlite:///{os.path.join(BASE_DIR, 'pms_demo.db')}"
 )
@@ -50,7 +50,7 @@ class Client(db.Model):
     city = db.Column(db.String(80))
     state = db.Column(db.String(20))
     zip = db.Column(db.String(20))
-    
+
 class Building(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -77,7 +77,7 @@ class ProjectAssignment(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     project = db.relationship('Project', backref='assignments')
     user = db.relationship('User', backref='project_assignments')
 
@@ -94,9 +94,8 @@ class Event(db.Model):
     project = db.relationship('Project', backref='events')
 
 
-
 class TimeEntry(db.Model):
-    __tablename__ = 'time_entry'  
+    __tablename__ = 'time_entry'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
@@ -106,7 +105,6 @@ class TimeEntry(db.Model):
 
     project = db.relationship('Project', backref='time_entries')
     user = db.relationship('User', backref='time_entries')
-
 
 
 @login_manager.user_loader
@@ -169,17 +167,17 @@ class Notification(db.Model):
 def init_db():
     db.drop_all()
     db.create_all()
-    
+
     # Seed demo user
     if not User.query.filter_by(email="demo@pms.local").first():
         u = User(email="demo@pms.local", name="Demo User", role="employee")  #  changes: Set demo user as employee
         u.set_password("demo123")
         db.session.add(u)
-    
+
     # Add multiple clients with addresses (their home/office addresses - where they receive mail)
     c1 = Client(
-        name="Bruce Wayne", 
-        contact="bwayne.enterprises@gmail.com", 
+        name="Bruce Wayne",
+        contact="bwayne.enterprises@gmail.com",
         phone="555-01234",
         street="Wayne Enterprises, 1 Wayne Tower",  # His corporate office
         city="Gotham",
@@ -187,8 +185,8 @@ def init_db():
         zip="08402"
     )
     c2 = Client(
-        name="Tony Stark", 
-        contact="tstark@starkindustries.com", 
+        name="Tony Stark",
+        contact="tstark@starkindustries.com",
         phone="555-99999",
         street="10880 Malibu Point",  # His Malibu house (different from project site)
         city="Malibu",
@@ -196,8 +194,8 @@ def init_db():
         zip="90265"
     )
     c3 = Client(
-        name="Peter Parker", 
-        contact="pparker@dailybugle.com", 
+        name="Peter Parker",
+        contact="pparker@dailybugle.com",
         phone="555-77777",
         street="178 Bleecker Street",  # His apartment (different from project site)
         city="New York",
@@ -205,28 +203,28 @@ def init_db():
         zip="10012"
     )
     db.session.add_all([c1, c2, c3])
-    
+
     # Add multiple buildings
     b1 = Building(name="Wayne Manor", street="1007 Mountain Drive", city="Gotham", state="NJ", zip="08401")
     b2 = Building(name="Stark Tower", street="200 Park Avenue", city="New York", state="NY", zip="10166")
     b3 = Building(name="Parker Residence", street="20 Ingram Street", city="Queens", state="NY", zip="11375")
     db.session.add_all([b1, b2, b3])
-    
+
     # Commit buildings first so they have IDs
     db.session.commit()
-    
+
     # Add multiple projects (NOW with building links)
-    p1 = Project(name="Wayne Residential Complex", client=c1, building=b1, description="Luxury residential development", status="In Progress", due_date=datetime(2025,12,23).date())
-    p2 = Project(name="Stark Industries HQ Renovation", client=c2, building=b2, description="Modern office renovation", status="Planned", due_date=datetime(2026,3,15).date())
-    p3 = Project(name="Parker Family Home Remodel", client=c3, building=b3, description="Small home renovation project", status="In Progress", due_date=datetime(2025,11,30).date())
+    p1 = Project(name="Wayne Residential Complex", client=c1, building=b1, description="Luxury residential development", status="In Progress", due_date=datetime(2025, 12, 23).date())
+    p2 = Project(name="Stark Industries HQ Renovation", client=c2, building=b2, description="Modern office renovation", status="Planned", due_date=datetime(2026, 3, 15).date())
+    p3 = Project(name="Parker Family Home Remodel", client=c3, building=b3, description="Small home renovation project", status="In Progress", due_date=datetime(2025, 11, 30).date())
     db.session.add_all([p1, p2, p3])
-    
+
     # Add multiple events
-    e1 = Event(title="Pre-Construction Planning", event_type="Client Meeting", project=p1, start=datetime(2025,11,13,12,31))
-    e2 = Event(title="Site Inspection", event_type="Survey", project=p1, start=datetime(2025,11,20,9,0), end=datetime(2025,11,20,11,0))
-    e3 = Event(title="Blueprint Review", event_type="Design", project=p2, start=datetime(2025,11,25,14,0))
+    e1 = Event(title="Pre-Construction Planning", event_type="Client Meeting", project=p1, start=datetime(2025, 11, 13, 12, 31))
+    e2 = Event(title="Site Inspection", event_type="Survey", project=p1, start=datetime(2025, 11, 20, 9, 0), end=datetime(2025, 11, 20, 11, 0))
+    e3 = Event(title="Blueprint Review", event_type="Design", project=p2, start=datetime(2025, 11, 25, 14, 0))
     db.session.add_all([e1, e2, e3])
-    
+
     db.session.commit()
     print("Initialized the database. Login with demo@pms.local / demo123")
 
@@ -238,10 +236,10 @@ from sqlalchemy import or_, func, desc  # add this import at the top
 def index():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
-    
+
     if request.method == "POST":
         identifier = request.form["email"].strip()
-        password   = request.form["password"]
+        password = request.form["password"]
 
         # normalize once for case-insensitive name match
         ident_lower = identifier.lower()
@@ -259,7 +257,7 @@ def index():
             return redirect(url_for("dashboard"))
 
         flash("Invalid credentials", "danger")
-    
+
     #client_login template as the unified login page
     return render_template("client_login.html")
 
@@ -267,27 +265,27 @@ def index():
 def register():
     # Get the type from query parameter (employee or client)
     account_type = request.args.get('type', 'client')
-    
+
     if request.method == "POST":
         email = request.form["email"].strip().lower()
         name = request.form["name"].strip()
         password = request.form["password"]
         role = request.form.get("role", account_type)
-        
+
         if User.query.filter_by(email=email).first():
             flash("Email already registered.", "warning")
             return redirect(url_for("register", type=account_type))
-        
+
         # Create user with the specified role
         u = User(email=email, name=name, role=role)
         u.set_password(password)
         db.session.add(u)
         db.session.commit()
-        
+
         # Unified registration redirect to single login page
         flash("Registration successful! Please login.", "success")
         return redirect(url_for("index"))
-    
+
     return render_template("register.html", account_type=account_type)
 
 @app.route("/logout")
@@ -349,7 +347,7 @@ def dashboard():
 @app.route("/main")
 @login_required
 def main_menu():
-        return render_template("main_menu.html")
+    return render_template("main_menu.html")
 
 # ---- Clients CRUD ----
 @app.route("/clients")
@@ -359,10 +357,10 @@ def clients():
     # Get search query and sort option from URL parameters
     search_query = request.args.get("q", "").strip()
     sort_by = request.args.get("sort", "name")  # Default sort by name
-    
+
     # Start with base query
     query = Client.query
-    
+
     # Apply search filter if provided
     if search_query:
         query = query.filter(
@@ -376,7 +374,7 @@ def clients():
                 Client.zip.ilike(f"%{search_query}%")
             )
         )
-    
+
     # Apply sorting
     if sort_by == "name":
         query = query.order_by(Client.name)
@@ -384,13 +382,13 @@ def clients():
         query = query.order_by(Client.city)
     elif sort_by == "state":
         query = query.order_by(Client.state)
-    
+
     clients_list = query.all()
-    
+
     # Count projects for each client
     for client in clients_list:
         client.project_count = Project.query.filter_by(client_id=client.id).count()
-    
+
     return render_template("clients.html", clients=clients_list, search_query=search_query, sort_by=sort_by)
 
 @app.route("/clients/create", methods=["POST"])
@@ -398,21 +396,21 @@ def clients():
 @employee_required  #  changes: Only employees can create clients
 def clients_create():
     name = request.form["name"].strip()
-    contact = request.form.get("contact","").strip()
-    phone = request.form.get("phone","").strip()
+    contact = request.form.get("contact", "").strip()
+    phone = request.form.get("phone", "").strip()
     # Get address fields from form
-    street = request.form.get("street","").strip()
-    city = request.form.get("city","").strip()
-    state = request.form.get("state","").strip()
-    zip_code = request.form.get("zip","").strip()
-    
+    street = request.form.get("street", "").strip()
+    city = request.form.get("city", "").strip()
+    state = request.form.get("state", "").strip()
+    zip_code = request.form.get("zip", "").strip()
+
     if not name:
         flash("Client name required", "warning")
     else:
         # Create client with all fields including address
         db.session.add(Client(
-            name=name, 
-            contact=contact, 
+            name=name,
+            contact=contact,
             phone=phone,
             street=street,
             city=city,
@@ -422,7 +420,7 @@ def clients_create():
         db.session.commit()
         flash("Client added", "success")
     return redirect(url_for("clients"))
-    
+
 @app.route("/clients/<int:id>/update", methods=["POST"])
 @login_required
 @employee_required  #  changes: Only employees can update clients
@@ -439,7 +437,7 @@ def clients_update(id):
     db.session.commit()
     flash("Client updated successfully.", "success")
     return redirect(url_for("clients"))
-    
+
 @app.route("/clients/<int:id>/delete", methods=["POST"])
 @login_required
 @employee_required  #  changes: Only employees can delete clients
@@ -463,33 +461,33 @@ def clients_delete(id):
 def client_detail(id):
     """View detailed information about a specific client"""
     client = Client.query.get_or_404(id)
-    
+
     # Get all projects for this client
     projects = Project.query.filter_by(client_id=id).all()
-    
+
     # Get all events related to this client's projects
     project_ids = [p.id for p in projects]
     events = Event.query.filter(Event.project_id.in_(project_ids)).order_by(Event.start.desc()).all() if project_ids else []
-    
+
     # Calculate stats
     total_projects = len(projects)
     active_projects = len([p for p in projects if p.status == "In Progress"])
     completed_projects = len([p for p in projects if p.status == "Done"])
     upcoming_events = len([e for e in events if e.start > datetime.now()])
-    
+
     stats = {
         'total_projects': total_projects,
         'active_projects': active_projects,
         'completed_projects': completed_projects,
         'upcoming_events': upcoming_events
     }
-    
-    return render_template("client_detail.html", 
-                         client=client, 
-                         projects=projects, 
-                         events=events,
-                         stats=stats)
-    
+
+    return render_template("client_detail.html",
+                           client=client,
+                           projects=projects,
+                           events=events,
+                           stats=stats)
+
 # ---- Buildings CRUD (minimal) ----
 @app.route("/buildings")
 @login_required
@@ -498,10 +496,10 @@ def buildings():
     """Display all buildings with optional search and sort"""
     search_query = request.args.get("q", "").strip()
     sort_by = request.args.get("sort", "name")  # Default sort by name
-    
+
     # Start with base query
     query = Building.query
-    
+
     # Apply search filter if provided
     if search_query:
         query = query.filter(
@@ -513,7 +511,7 @@ def buildings():
                 Building.zip.ilike(f"%{search_query}%")
             )
         )
-    
+
     # Apply sorting
     if sort_by == "name":
         query = query.order_by(Building.name)
@@ -521,13 +519,13 @@ def buildings():
         query = query.order_by(Building.city)
     elif sort_by == "state":
         query = query.order_by(Building.state)
-    
+
     buildings_list = query.all()
-    
-    return render_template("buildings.html", 
-                         buildings=buildings_list,
-                         search_query=search_query,
-                         sort_by=sort_by)
+
+    return render_template("buildings.html",
+                           buildings=buildings_list,
+                           search_query=search_query,
+                           sort_by=sort_by)
 
 @app.route("/buildings/create", methods=["POST"])
 @login_required
@@ -543,7 +541,8 @@ def buildings_create():
         flash("Building name required", "warning")
     else:
         b = Building(name=name, street=street, city=city, state=state, zip=zipc, notes=notes)
-        db.session.add(b); db.session.commit()
+        db.session.add(b)
+        db.session.commit()
         flash("Building added", "success")
     return redirect(url_for("buildings"))
 
@@ -567,7 +566,8 @@ def buildings_update(id):
 @employee_required  #  changes: Only employees can delete buildings
 def buildings_delete(id):
     b = Building.query.get_or_404(id)
-    db.session.delete(b); db.session.commit()
+    db.session.delete(b)
+    db.session.commit()
     flash("Building deleted", "info")
     return redirect(url_for("buildings"))
 
@@ -580,7 +580,7 @@ def projects():
     sort_by = request.args.get("sort", "name")  # Get sort parameter, default to 'name'
     page = request.args.get("page", 1, type=int)  # Get page number, default to 1
     per_page = 15  # Projects per page
-    
+
     if current_user.role == 'employee':
         # Employees see all projects
         query = Project.query.join(Client, isouter=True)
@@ -617,7 +617,7 @@ def projects():
     # Paginate results
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     projects = pagination.items
-    
+
     # Mark overdue projects
     from datetime import date
     today = date.today()
@@ -626,7 +626,7 @@ def projects():
             project.is_overdue = True
         else:
             project.is_overdue = False
-    
+
     # MERGED: Pass all users to template for client assignment dropdown (your feature)
     # AND pass buildings for building associations (teammate's feature)
     all_users = User.query.filter_by(role='client').all() if current_user.role == 'employee' else []
@@ -667,7 +667,6 @@ def projects_create():
     flash("Project created", "success")
     return redirect(url_for("projects"))
 
-    
 @app.route("/projects/<int:id>/delete", methods=["POST"])
 @login_required
 @employee_required  #  changes: Only employees can delete projects
@@ -679,7 +678,7 @@ def projects_delete(id):
     if Event.query.filter_by(project_id=p.id).count() > 0:
         flash("Cannot delete: this project still has events.", "warning")
         return redirect(url_for("projects"))
-    
+
     Activity.query.filter_by(project_id=p.id).delete(synchronize_session=False)
 
     db.session.delete(p)
@@ -693,26 +692,26 @@ def projects_delete(id):
 def projects_update(id):
     """Update project information"""
     p = Project.query.get_or_404(id)
-    
+
     p.name = request.form.get("name", "").strip()
     p.status = request.form.get("status", "Planned")
     p.description = request.form.get("description", "").strip() or None
-    
+
     # Handle due date
     due_str = request.form.get("due_date", "").strip()
     if due_str:
         p.due_date = datetime.strptime(due_str, "%Y-%m-%d").date()
     else:
         p.due_date = None
-    
+
     # Handle client
     client_id = request.form.get("client_id", "").strip()
     p.client_id = int(client_id) if client_id else None
-    
+
     # Handle building
     building_id = request.form.get("building_id", "").strip()
     p.building_id = int(building_id) if building_id else None
-    
+
     db.session.commit()
     flash("Project updated successfully!", "success")
     return redirect(url_for("project_detail", id=id))
@@ -722,7 +721,7 @@ def projects_update(id):
 def project_detail(id):
     """View detailed information about a specific project"""
     project = Project.query.get_or_404(id)
-    
+
     # Check permissions - employees see all, clients only see assigned projects
     if current_user.role == 'client':
         # Check if this client user is assigned to this project
@@ -730,17 +729,17 @@ def project_detail(id):
         if not assignment:
             flash("Access denied. You are not assigned to this project.", "danger")
             return redirect(url_for("dashboard"))
-    
+
     # Get all events for this project
     events = Event.query.filter_by(project_id=id).order_by(Event.start.desc()).all()
-    
+
     # Get assigned users (client users)
     assigned_users = [assignment.user for assignment in project.assignments]
-    
+
     # Get all clients and buildings for edit form (employees only)
     clients = Client.query.order_by(Client.name).all() if current_user.role == 'employee' else []
     buildings = Building.query.order_by(Building.name).all() if current_user.role == 'employee' else []
-    
+
     # Calculate stats
     total_events = len(events)
     upcoming_events = len([e for e in events if e.start > datetime.now()])
@@ -750,7 +749,7 @@ def project_detail(id):
     if project.due_date and project.status != "Done":
         delta = project.due_date - datetime.now().date()
         days_until_due = delta.days
-    
+
     stats = {
         'total_events': total_events,
         'upcoming_events': upcoming_events,
@@ -762,15 +761,15 @@ def project_detail(id):
     total_hours = sum(entry.hours for entry in time_entries)
     
     return render_template("project_detail.html",
-                         project=project,
-                         events=events,
-                         assigned_users=assigned_users,
-                         clients=clients,
-                         buildings=buildings,
-                         stats=stats,
-                         time_entries=time_entries,
-                         total_hours=total_hours)
-    
+                           project=project,
+                           events=events,
+                           assigned_users=assigned_users,
+                           clients=clients,
+                           buildings=buildings,
+                           stats=stats,
+                           time_entries=time_entries,
+                           total_hours=total_hours)
+
 #Events
 @app.route("/events")
 @login_required  #  changes: Allow both employees and clients to view events
@@ -789,7 +788,7 @@ def events():
         else:
             events_list = []
             projects_list = []
-    
+
     return render_template("events.html", events=events_list, projects=projects_list)
 
 @app.route("/events/create", methods=["POST"])
@@ -802,7 +801,7 @@ def events_create():
     start = request.form.get("start")
     end = request.form.get("end", "").strip()
     notes = request.form.get("notes", "").strip()
-    
+
     if not title or not start:
         flash("Title and start are required", "warning")
     else:
@@ -854,12 +853,13 @@ def generate_invoice(id):
     current_date = datetime.now().strftime("%m/%d/%Y")
     project_number = "2025-37"  # placeholder
     return render_template(
-        "invoice.html", 
-        project=project, 
-        invoice_text=invoice_text, 
+        "invoice.html",
+        project=project,
+        invoice_text=invoice_text,
         current_date=current_date,
         project_number=project_number
     )
+
 #Proposal route
 @app.route("/project/<int:id>/generate_proposal")
 def generate_proposal(id):
@@ -912,11 +912,11 @@ def change_user_role(user_id):
     """Change a user's role between client and employee"""
     user = User.query.get_or_404(user_id)
     new_role = request.form.get("role")
-    
+
     if new_role not in ['client', 'employee']:
         flash("Invalid role specified.", "danger")
         return redirect(url_for("admin_users"))
-    
+
     user.role = new_role
     db.session.commit()
     flash(f"User {user.name} role changed to {new_role}.", "success")
@@ -928,24 +928,24 @@ def change_user_role(user_id):
 def delete_user(user_id):
     """Delete a user account"""
     user = User.query.get_or_404(user_id)
-    
+
     #  changes: Prevent deleting yourself
     if user.id == current_user.id:
         flash("Cannot delete your own account.", "danger")
         return redirect(url_for("admin_users"))
-    
+
     #  changes: Check if user has project assignments
     assignment_count = ProjectAssignment.query.filter_by(user_id=user_id).count()
     if assignment_count > 0:
         flash(f"Cannot delete: {user.name} is assigned to {assignment_count} project(s). Remove assignments first.", "warning")
         return redirect(url_for("admin_users"))
-    
+
     #  changes: Check if user has activities
     activity_count = Activity.query.filter_by(user_id=user_id).count()
     if activity_count > 0:
         flash(f"Cannot delete: {user.name} has {activity_count} activity record(s) in the system.", "warning")
         return redirect(url_for("admin_users"))
-    
+
     user_name = user.name
     db.session.delete(user)
     db.session.commit()
@@ -959,19 +959,19 @@ def assign_client_to_project(project_id):
     """Assign a client user to a project"""
     project = Project.query.get_or_404(project_id)
     user_id = request.form.get("user_id")
-    
+
     if not user_id:
         flash("Please select a user.", "warning")
         return redirect(url_for("projects"))
-    
+
     user = User.query.get_or_404(int(user_id))
-    
+
     #  changes: Check if already assigned
     existing = ProjectAssignment.query.filter_by(project_id=project_id, user_id=user_id).first()
     if existing:
         flash(f"{user.name} is already assigned to this project.", "info")
         return redirect(url_for("projects"))
-    
+
     #  changes: Create assignment
     assignment = ProjectAssignment(project_id=project_id, user_id=user_id)
     db.session.add(assignment)
@@ -987,7 +987,7 @@ def unassign_client_from_project(project_id, user_id):
     assignment = ProjectAssignment.query.filter_by(project_id=project_id, user_id=user_id).first_or_404()
     user_name = assignment.user.name
     project_name = assignment.project.name
-    
+
     db.session.delete(assignment)
     db.session.commit()
     flash(f"{user_name} removed from {project_name}.", "info")
@@ -1114,15 +1114,12 @@ def notifications_mark_all_read():
 @login_required
 @employee_required
 def notification_detail(notification_id):
-    """Show one notification with the full message"""
     n = Notification.query.get_or_404(notification_id)
 
-    # Permission check
     if n.recipient_id is not None and n.recipient_id != current_user.id:
         flash("Access denied for this notification.", "danger")
         return redirect(url_for("notifications"))
 
-    # Mark as read when opened
     if not n.is_read:
         n.is_read = True
         db.session.commit()
@@ -1147,7 +1144,6 @@ def inject_notification_count():
         'unread_notifications': unread_notification_count()
     }
 
-
 @app.route('/timecard', methods=['GET', 'POST'])
 @login_required
 def timecard():
@@ -1171,9 +1167,6 @@ def timecard():
             return redirect(url_for('timecard'))
 
     return render_template('timecard.html', projects=projects)
-
-
-
 
 
 if __name__ == "__main__":
