@@ -158,6 +158,23 @@
           Time Card
         </a>
 
+
+
+
+         <!-- For employees only -->
+        {% if current_user.is_authenticated and current_user.role == 'employee' %}
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('reports') }}">
+               <i class="bi bi-bar-chart"></i> Reports
+            </a>
+        </li>
+        {% endif %}
+
+
+
+
+
+
         <a class="nav-link {% if request.endpoint=='admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}">User Management</a>
       {% endif %}
     {% endif %}
