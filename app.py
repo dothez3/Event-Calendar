@@ -745,9 +745,9 @@ def project_detail(id):
     total_events = len(events)
     upcoming_events = len([e for e in events if e.start > datetime.now()])
     
-    # Days until due date
+    # Days until due date - ONLY calculate if project is NOT done
     days_until_due = None
-    if project.due_date:
+    if project.due_date and project.status != "Done":
         delta = project.due_date - datetime.now().date()
         days_until_due = delta.days
     
@@ -760,12 +760,6 @@ def project_detail(id):
 
     time_entries = TimeEntry.query.filter_by(project_id=id).all()
     total_hours = sum(entry.hours for entry in time_entries)
-
-   
-
-
-
-
     
     return render_template("project_detail.html",
                          project=project,
@@ -1026,49 +1020,7 @@ def notifications():
         employees=employees,
     )
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-@app.route("/notifications/<int:notification_id>")
-@login_required
-@employee_required
-def notification_detail(notification_id):
-    """Show a single notification in full detail"""
-<<<<<<< Updated upstream
-=======
 
-    n = Notification.query.get_or_404(notification_id)
-
-    # Only allow if message is broadcast or sent to this employee
-    if n.recipient_id is not None and n.recipient_id != current_user.id:
-        flash("Access denied for this notification.", "danger")
-        return redirect(url_for("notifications"))
-
-    # Mark as read when opened
-    if not n.is_read:
-        n.is_read = True
-        db.session.commit()
-
-    return render_template("notification_detail.html", notification=n)
->>>>>>> Stashed changes
-
-    n = Notification.query.get_or_404(notification_id)
-
-    # Only allow if message is broadcast or sent to this employee
-    if n.recipient_id is not None and n.recipient_id != current_user.id:
-        flash("Access denied for this notification.", "danger")
-        return redirect(url_for("notifications"))
-
-    # Mark as read when opened
-    if not n.is_read:
-        n.is_read = True
-        db.session.commit()
-
-    return render_template("notification_detail.html", notification=n)
-
->>>>>>> Stashed changes
 @app.route("/notifications/send", methods=["POST"])
 @login_required
 @employee_required
@@ -1157,36 +1109,7 @@ def notifications_mark_all_read():
     flash("All your notifications marked as read.", "success")
     return redirect(url_for("notifications"))
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-@app.route("/notifications/<int:notification_id>")
-@login_required
-@employee_required
-def notification_detail(notification_id):
-    """Show full message for a single notification"""
-    n = Notification.query.get_or_404(notification_id)
-<<<<<<< Updated upstream
-=======
 
-    # mark as read when opened
-    if not n.is_read:
-        n.is_read = True
-        db.session.commit()
-
-    return render_template("notification_detail.html", notification=n)
->>>>>>> Stashed changes
-
-    # mark as read when opened
-    if not n.is_read:
-        n.is_read = True
-        db.session.commit()
-
-    return render_template("notification_detail.html", notification=n)
-
->>>>>>> Stashed changes
 @app.route("/notifications/<int:notification_id>")
 @login_required
 @employee_required
