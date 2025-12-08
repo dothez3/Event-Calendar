@@ -16,7 +16,7 @@
     height: 1.1rem;
     padding: 0 0.35rem;
     border-radius: 999px;
-    background-color: #dc2626; /* red */
+    background-color: #dc2626;
     color: #ffffff;
     font-size: 0.7rem;
     font-weight: 600;
@@ -34,14 +34,12 @@
     justify-content: center;
   }
 
-  /* Notification card grid layout */
 .notif-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1rem;
 }
 
-/* Individual notification card */
 .notif-card {
   background: #ffffff;
   border: 1px solid #d1d5db;
@@ -54,78 +52,78 @@
   overflow: hidden;
 }
 
-/* Highlight unread cards */
 .notif-card-unread {
-  background: #e0f2fe; /* light blue highlight */
-  border-color: #0284c7; /* blue border */
+  background: #e0f2fe;
+  border-color: #0284c7;
 }
 
-/* Clickable area in card */
-.notif-card-link {
-  display: block;
-  cursor: pointer;
-}
-
-/* Cut long messages inside the card */
 .notif-message {
   font-size: 0.9rem;
   line-height: 1.3rem;
   color: #374151;
-  max-height: 3.9rem; /* shows about 3 lines */
+  max-height: 3.9rem;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3; 
+
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
 }
+
  :root { --sidebar-w: 240px; }
   body { min-height: 100vh; }
-  /* Fixed sidebar layout to keep logout button at bottom */
+
   .sidebar {
     position: fixed; top: 0; left: 0; bottom: 0;
     width: var(--sidebar-w);
-    background: #111827;   /* dark slate background */
+    background: #111827;
     color: #f9fafb;
     padding: 1rem;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
-  /* Hide sidebar when user is not authenticated */
+
   .sidebar.hide-sidebar {
     display: none;
   }
+
   .sidebar a { color: #e5e7eb; text-decoration: none; }
   .sidebar a.active, .sidebar a:hover { color: #ffffff; }
+
   .brand { font-weight: 700; letter-spacing: .3px; }
+
   .nav-vertical .nav-link {
     border-radius: .5rem;
     padding: .5rem .75rem;
     margin-bottom: .25rem;
   }
-  /*Navigation takes remaining space, pushing button to bottom */
+
   .nav-vertical {
     flex: 1;
   }
+
   .app-content {
     margin-left: var(--sidebar-w);
     padding: 1.25rem;
   }
-  /*Remove left margin when sidebar is hidden */
+
   .app-content.full-width {
     margin-left: 0;
   }
-  /*Auto-dismiss alert animation */
+
   .alert {
     transition: opacity 0.5s ease-out;
   }
+
   .alert.fade-out {
     opacity: 0;
   }
 </style>
   </head>
   <body>
- <!-- Hide sidebar on login page -->
+
  <aside class="sidebar {% if not current_user.is_authenticated %}hide-sidebar{% endif %}">
   <div class="mb-3">
     <a class="brand h5 mb-0 d-block"
@@ -136,20 +134,17 @@
       {% if current_user.is_authenticated %}Hi, {{ current_user.name }}{% else %}Guest{% endif %}
     </div>
   </div>
+
   <nav class="nav nav-vertical flex-column mb-3">
     {% if current_user.is_authenticated %}
       <a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
       <a class="nav-link {% if request.endpoint=='projects' %}active{% endif %}" href="{{ url_for('projects') }}">Projects</a>
-      <!--  changes: Events visible to both employees and clients -->
       <a class="nav-link {% if request.endpoint=='events' %}active{% endif %}" href="{{ url_for('events') }}">Events</a>
-      
-      
-      <!--  changes: Show employee-only menu items -->
+
       {% if current_user.role == 'employee' %}
         <a class="nav-link {% if request.endpoint=='clients' %}active{% endif %}" href="{{ url_for('clients') }}">Clients</a>
         <a class="nav-link {% if request.endpoint=='buildings' %}active{% endif %}" href="{{ url_for('buildings') }}">Buildings</a>
 
-        <!-- Notifications link for employees -->
         <a class="nav-link {% if request.endpoint=='notifications' %}active{% endif %}"
            href="{{ url_for('notifications') }}">
           Notifications
@@ -167,7 +162,7 @@
       {% endif %}
     {% endif %}
   </nav>
-  <!--Only show logout button when authenticated -->
+
   <div class="d-grid gap-2">
     {% if current_user.is_authenticated %}
       <a class="btn btn-sm btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
@@ -175,9 +170,7 @@
   </div>
 </aside>
 
-  <!--Full-width content when sidebar is hidden -->
   <main class="app-content {% if not current_user.is_authenticated %}full-width{% endif %}">
-    <!-- Auto-dismissible flash messages -->
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
         <div class="mb-3" id="flash-messages">
@@ -193,33 +186,11 @@
     {% block content %}{% endblock %}
  </main>
 
-  <!-- Modal for full notification message -->
-  <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="notificationModalLabel">Notification detail</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body" id="notificationModalBody">
-          <!-- Full message will be injected here -->
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bootstrap JS (needed for collapse, modals, dropdowns, etc.) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- FullCalendar JS -->
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-  
-  <!--Auto-dismiss flash messages and handle notification modal -->
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      /* Auto dismiss alerts */
       const alerts = document.querySelectorAll('.alert');
       alerts.forEach(function(alert) {
         setTimeout(function() {
@@ -230,25 +201,35 @@
           }, 500);
         }, 4000);
       });
-
-      /* Notification modal logic */
-      const modalEl = document.getElementById('notificationModal');
-      const modalBody = document.getElementById('notificationModalBody');
-      const notifLinks = document.querySelectorAll('.notif-card-link');
-
-      if (modalEl && modalBody && notifLinks.length > 0) {
-        const notifModal = new bootstrap.Modal(modalEl);
-
-        notifLinks.forEach(function(link) {
-          link.addEventListener('click', function() {
-            const card = this.closest('.notif-card');
-            const fullMessage = card ? card.dataset.notifMessage || '' : '';
-            modalBody.textContent = fullMessage;
-            notifModal.show();
-          });
-        });
-      }
     });
+  </script>
+
+  <!-- Full Notification Modal -->
+  <div class="modal fade" id="notifModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Notification</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="notifModalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🚀 ADDED: Script to open modal -->
+  <script>
+  document.addEventListener("click", function(event) {
+    if (event.target && event.target.dataset.notifMessage) {
+      const fullMsg = event.target.dataset.notifMessage;
+      document.getElementById("notifModalBody").innerText = fullMsg;
+      const modal = new bootstrap.Modal(document.getElementById("notifModal"));
+      modal.show();
+    }
+  });
   </script>
   </body>
 </html>
