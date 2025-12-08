@@ -1027,12 +1027,32 @@ def notifications():
     )
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 @app.route("/notifications/<int:notification_id>")
 @login_required
 @employee_required
 def notification_detail(notification_id):
     """Show a single notification in full detail"""
+<<<<<<< Updated upstream
+=======
+
+    n = Notification.query.get_or_404(notification_id)
+
+    # Only allow if message is broadcast or sent to this employee
+    if n.recipient_id is not None and n.recipient_id != current_user.id:
+        flash("Access denied for this notification.", "danger")
+        return redirect(url_for("notifications"))
+
+    # Mark as read when opened
+    if not n.is_read:
+        n.is_read = True
+        db.session.commit()
+
+    return render_template("notification_detail.html", notification=n)
+>>>>>>> Stashed changes
 
     n = Notification.query.get_or_404(notification_id)
 
@@ -1138,13 +1158,26 @@ def notifications_mark_all_read():
     return redirect(url_for("notifications"))
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 @app.route("/notifications/<int:notification_id>")
 @login_required
 @employee_required
 def notification_detail(notification_id):
     """Show full message for a single notification"""
     n = Notification.query.get_or_404(notification_id)
+<<<<<<< Updated upstream
+=======
+
+    # mark as read when opened
+    if not n.is_read:
+        n.is_read = True
+        db.session.commit()
+
+    return render_template("notification_detail.html", notification=n)
+>>>>>>> Stashed changes
 
     # mark as read when opened
     if not n.is_read:
