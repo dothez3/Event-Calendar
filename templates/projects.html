@@ -85,34 +85,54 @@
         <td {% if p.is_overdue or p.status == 'Overdue' %}style="color: red; font-weight: bold;"{% endif %}>{{ p.due_date or "-" }}</td>
 
         <!-- Show and manage assigned client users (employees only) -->
-        {% if current_user.role == 'employee' %}
-          <td>
-            {% if p.assignments %}
-              <div class="mb-2">
-                {% for assignment in p.assignments %}
-                  <div class="d-inline-flex align-items-center bg-secondary text-white rounded px-2 py-1 me-1 mb-1">
-                    <span class="me-2">{{ assignment.user.name }}</span>
-                    <form method="post" action="{{ url_for('unassign_client_from_project', project_id=p.id, user_id=assignment.user.id) }}" class="d-inline m-0">
-                      <button type="submit" class="btn btn-sm p-0 text-white border-0" style="background: none; font-size: 1.2rem; line-height: 1;" 
-                              onclick="return confirm('Remove {{ assignment.user.name }} from this project?')"
-                              title="Remove user">×</button>
-                    </form>
-                  </div>
-                {% endfor %}
-              </div>
-            {% endif %}
-            <!-- Assign new client form -->
-            <form method="post" action="{{ url_for('assign_client_to_project', project_id=p.id) }}" class="d-flex gap-1">
-              <select name="user_id" class="form-select form-select-sm" style="max-width: 150px;">
-                <option value="">Assign client...</option>
-                {% for user in users %}
-                  <option value="{{ user.id }}">{{ user.name }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit" class="btn btn-sm btn-outline-primary">+</button>
-            </form>
-          </td>
-        {% endif %}
+       {% if current_user.role == 'employee' %}
+<td>
+  {% set num = p.assignments|length %}
+
+  <!-- Show assigned client(s) on the left -->
+  {% if num > 0 %}
+    <span class="me-2">{{ p.assignments[0].user.name }}</span>
+
+    {% if num > 1 %}
+      <span class="badge bg-light text-muted border me-2">{{ num }}</span>
+    {% endif %}
+  {% endif %}
+
+  <!-- Right side: dropdown + add button -->
+  {% if num > 0 %}
+    <form method="post"
+          action="{{ url_for('assign_client_to_project', project_id=p.id) }}"
+          class="d-inline-flex align-items-center gap-1">
+
+      <select name="user_id" class="form-select form-select-sm" style="width:100px;">
+        <option value="">Select…</option>
+        {% for user in users %}
+          <option value="{{ user.id }}">{{ user.name }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-sm btn-outline-primary">+</button>
+    </form>
+
+  {% else %}
+    <!-- If NO assigned users: full Assign UI -->
+    <form method="post"
+          action="{{ url_for('assign_client_to_project', project_id=p.id) }}"
+          class="d-inline-flex align-items-center gap-1">
+
+      <select name="user_id" class="form-select form-select-sm" style="width:150px;">
+        <option value="">Assign client...</option>
+        {% for user in users %}
+          <option value="{{ user.id }}">{{ user.name }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-sm btn-outline-primary">+</button>
+    </form>
+  {% endif %}
+</td>
+{% endif %}
+
 
         <td class="text-end">
           {% if current_user.role == 'employee' %}

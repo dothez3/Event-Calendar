@@ -1,32 +1,173 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h3>Time Card</h3>
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <div class="card p-4 shadow-sm">
+      <h3 class="text-center mb-4">Log Your Time</h3>
 
-<div class="card p-3">
-  <form method="POST">
-    <div class="mb-3">
-      <label class="form-label">Project</label>
-      <select name="project_id" class="form-select" required>
-        <option value="">Select a project</option>
-        {% for p in projects %}
-        <option value="{{ p.id }}">{{ p.name }}</option>
-        {% endfor %}
-      </select>
+      <form method="POST">
+        <!-- PROJECT PICKER -->
+        <div class="mb-3">
+          <label class="form-label d-block">Project</label>
+
+          <!-- Hidden input actually submitted with the form -->
+          <input type="hidden" name="project_id" id="selectedProjectId" required>
+
+          <div class="dropdown w-100" data-bs-auto-close="outside">
+            <button
+              class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
+              type="button"
+              id="projectDropdownButton"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <span id="selectedProjectName">Select a project</span>
+              <span class="ms-2">&#9662;</span>
+            </button>
+
+            <div class="dropdown-menu p-3 w-100" aria-labelledby="projectDropdownButton">
+              <div class="row g-2 mb-2">
+                {# first 5 projects as "most recent" #}
+                {% for p in projects[:5] %}
+                <div class="col-4">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary w-100 project-option"
+                    data-project-id="{{ p.id }}"
+                    data-project-name="{{ p.name }}"
+                  >
+                    {{ p.name }}
+                  </button>
+                </div>
+                {% endfor %}
+
+                <!-- 6th slot: search projects -->
+                <div class="col-4">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary w-100"
+                    id="projectSearchBtn"
+                  >
+                    Search…
+                  </button>
+                </div>
+              </div>
+
+              <!-- inline search area (initially hidden) -->
+              <div id="projectSearchContainer" class="mt-2 d-none">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="projectSearchInput"
+                  placeholder="Search projects..."
+                >
+                <div
+                  id="projectSearchResults"
+                  class="mt-2"
+                  style="max-height: 200px; overflow-y: auto;"
+                >
+                  {% for p in projects %}
+                  <button
+                    type="button"
+                    class="btn btn-light w-100 text-start mb-1 project-option-search"
+                    data-project-id="{{ p.id }}"
+                    data-project-name="{{ p.name }}"
+                  >
+                    {{ p.name }}
+                  </button>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TIME DROPDOWN -->
+        <div class="mb-3">
+          <label class="form-label">Time</label>
+          <select name="hours" class="form-select" required>
+            <option value="">Select time</option>
+
+            {# 15-minute increments up to 10 hours #}
+            {% for i in range(1, 41) %}
+              {% set total_minutes = i * 15 %}
+              {% set h = (total_minutes // 60) %}
+              {% set m = (total_minutes % 60) %}
+
+              {% if h == 0 %}
+                {% set label = m|string + ' mins' %}
+              {% elif m == 0 %}
+                {% if h == 1 %}
+                  {% set label = '1 hour' %}
+                {% else %}
+                  {% set label = h|string + ' hours' %}
+                {% endif %}
+              {% else %}
+                {% if h == 1 %}
+                  {% set label = '1 hour ' + m|string + ' mins' %}
+                {% else %}
+                  {% set label = h|string + ' hours ' + m|string + ' mins' %}
+                {% endif %}
+              {% endif %}
+
+              <option value="{{ i * 0.25 }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button class="btn btn-primary w-100">Log Time</button>
+      </form>
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">Hours Spent</label>
-      <input type="number" step="0.25" name="hours" class="form-control" required>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">Description (optional)</label>
-      <textarea name="description" class="form-control"></textarea>
-    </div>
-
-    <button class="btn btn-primary">Log Time</button>
-  </form>
+  </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const projectIdInput = document.getElementById('selectedProjectId');
+  const projectNameSpan = document.getElementById('selectedProjectName');
+
+  function attachProjectClickHandlers(selector) {
+    document.querySelectorAll(selector).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const id = this.getAttribute('data-project-id');
+        const name = this.getAttribute('data-project-name');
+
+        projectIdInput.value = id;
+        projectNameSpan.textContent = name;
+      });
+    });
+  }
+
+  // Quick 5 buttons
+  attachProjectClickHandlers('.project-option');
+  // Search results buttons
+  attachProjectClickHandlers('.project-option-search');
+
+  // Show search area instead of redirecting
+  const searchBtn = document.getElementById('projectSearchBtn');
+  const searchContainer = document.getElementById('projectSearchContainer');
+  const searchInput = document.getElementById('projectSearchInput');
+
+  if (searchBtn && searchContainer && searchInput) {
+    searchBtn.addEventListener('click', function () {
+      searchContainer.classList.remove('d-none');
+      searchInput.focus();
+    });
+
+    searchInput.addEventListener('input', function () {
+      const query = this.value.toLowerCase();
+      document.querySelectorAll('.project-option-search').forEach(function (btn) {
+        const name = btn.textContent.toLowerCase();
+        btn.style.display = name.includes(query) ? '' : 'none';
+      });
+    });
+  }
+});
+</script>
+
 {% endblock %}
+
+
+
+
