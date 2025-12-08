@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<a href="{{ url_for('notifications') }}" class="btn btn-sm btn-outline-secondary mb-3">
+  &laquo; Back to notifications
+</a>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <div>
+      <div><strong>From:</strong> {{ notification.sender.name }}</div>
+
+      {% if notification.recipient_id %}
+        <div><strong>To:</strong> {{ notification.recipient.name }}</div>
+      {% else %}
+        <div><strong>To:</strong> All employees</div>
+      {% endif %}
+
+      {% if notification.project %}
+        <div><strong>Project:</strong> {{ notification.project.name }}</div>
+      {% endif %}
+    </div>
+
+    <div class="text-muted">
+      {{ notification.created_at.strftime('%m/%d/%Y %I:%M %p') }}
+    </div>
+  </div>
+
+  <div class="card-body">
+    <h5 class="card-title">Message</h5>
+    <hr>
+    <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">
+{{ notification.message }}
+    </pre>
+  </div>
+</div>
+{% endblock %}
